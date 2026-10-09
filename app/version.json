@@ -1,10 +1,10 @@
 {
   "web": "1.2.1",
   "bundleUrl": "https://alikaapp.github.io/sautiplus/app/sautiplus-1.2.1.zip",
-  "checksum": "44df517a24af0683e53f8cef7ecf5cd08903e2972d0078d5a088971013680e54",
-  "minApk": 4,
+  "checksum": "8b2c459e8d4ffecb91679a4e1ca2ba79f6c53e32c0c60cb5232f7410f5777e4d",
+  "minApk": 3,
   "apkBuild": 3,
   "apkVersion": "1.2",
-  "apkBytes": 4741895,
+  "apkBytes": 4741888,
   "apkUrl": "https://alikaapp.github.io/sautiplus/download/SautiPlus-AI.apk"
 }
