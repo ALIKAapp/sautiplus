@@ -1,6 +1,6 @@
 {
-  "web": "1.2.0",
-  "bundleUrl": "https://alikaapp.github.io/sautiplus/app/sautiplus-1.2.0.zip",
+  "web": "1.2.1",
+  "bundleUrl": "https://alikaapp.github.io/sautiplus/app/sautiplus-1.2.1.zip",
   "minApk": 3,
   "apkBuild": 3,
   "apkVersion": "1.2",
