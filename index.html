@@ -210,6 +210,33 @@ footer{padding:44px 0 calc(44px + env(safe-area-inset-bottom,0px));border-top:1p
 .foot a{text-decoration:none}
 .foot a:hover{color:var(--paper)}
 
+/* Support chat */
+.chat-fab{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;height:58px;padding:0 22px 0 18px;border-radius:999px;background:var(--gold);color:var(--ink);display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .25s var(--ease),opacity .2s}
+.chat-fab:hover{transform:translateY(-2px)}
+.chat-fab:active{transform:scale(.96)}
+.chat-open .chat-fab{transform:scale(.6);opacity:0;pointer-events:none}
+.chat{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:61;width:min(390px,calc(100vw - 24px));height:min(580px,calc(100dvh - 36px));background:var(--ink);color:var(--paper);border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden;transform-origin:100% 100%;transform:scale(.9) translateY(14px);opacity:0;visibility:hidden;transition:transform .3s var(--ease),opacity .22s,visibility 0s .3s}
+.chat-open .chat{transform:none;opacity:1;visibility:visible;transition:transform .3s var(--ease),opacity .22s}
+.chat-head{flex:none;display:flex;align-items:center;gap:12px;padding:14px 12px 14px 18px;border-bottom:1px solid var(--line)}
+.chat-head svg[data-mark]{width:28px;height:28px;flex:none}
+.chat-head b{display:block;font-family:var(--display);font-size:17px;line-height:1.2}
+.chat-head span{display:block;font-size:12.5px;color:var(--mute)}
+.chat-x{margin-left:auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--mute)}
+.chat-x:hover{background:rgba(244,243,239,.08);color:var(--paper)}
+.chat-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.cb{max-width:86%;padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.cb.bot{align-self:flex-start;background:var(--raise);border-bottom-left-radius:6px}
+.cb.me{align-self:flex-end;background:var(--gold);color:var(--ink);border-bottom-right-radius:6px}
+.cb.wait{display:flex;gap:5px;padding:14px}
+.cb.wait i{width:7px;height:7px;border-radius:50%;background:var(--mute);animation:dot 1.1s ease-in-out infinite}
+.cb.wait i:nth-child(2){animation-delay:.15s}.cb.wait i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.chat-form{flex:none;display:flex;gap:8px;align-items:center;padding:12px;border-top:1px solid var(--line)}
+.chat-form input{flex:1;min-width:0;background:var(--raise);border:1px solid var(--line);border-radius:999px;padding:12px 16px;color:var(--paper);font:inherit;font-size:16px}
+.chat-form input::placeholder{color:var(--mute)}
+.chat-form button{flex:none;width:44px;height:44px;border-radius:50%;background:var(--gold);color:var(--ink);display:grid;place-items:center}
+@media (max-width:480px){.chat{right:12px;bottom:12px;height:min(580px,calc(100dvh - 24px))}.chat-fab span{display:none}.chat-fab{padding:0;width:58px;justify-content:center}}
+
 /* Motion: one page-load sequence in the hero, then quiet reveals for whole blocks */
 .js .hero h1 .ln>span{transform:translateY(105%);animation:rise 1s var(--ease) forwards}
 .js .hero h1 .ln:nth-child(2)>span{animation-delay:.09s}
@@ -373,6 +400,23 @@ footer{padding:44px 0 calc(44px + env(safe-area-inset-bottom,0px));border-top:1p
   </div>
 </footer>
 
+<button class="chat-fab" id="chatFab" aria-haspopup="dialog" aria-controls="chat" aria-expanded="false">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg>
+  <span data-t="chatFab"></span>
+</button>
+<section class="chat" id="chat" role="dialog" aria-labelledby="chatTitle">
+  <div class="chat-head">
+    <svg viewBox="0 0 64 64" aria-hidden="true" data-mark></svg>
+    <div><b id="chatTitle" data-t="chatTitle"></b><span data-t="chatSub"></span></div>
+    <button class="chat-x" id="chatX"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="chat-log" id="chatLog" aria-live="polite"></div>
+  <form class="chat-form" id="chatForm">
+    <input id="chatInput" maxlength="500" autocomplete="off" enterkeyhint="send">
+    <button type="submit" id="chatSend"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+  </form>
+</section>
+
 <script>
 document.documentElement.classList.add("js");
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -440,6 +484,9 @@ const T = {
       ["Naweza kutumia sauti yangu mwenyewe?","Clone ya sauti iko kwenye vifurushi vya Starter, Pro na Business, na kurekodi sauti kunakuja hivi karibuni."],
     ],
     foot:"Imetengenezwa Tanzania.",
+    chatFab:"Msaada", chatTitle:"Msaada wa SautiPlus", chatSub:"Msaidizi wa AI, anajibu papo hapo", chatPh:"Andika swali lako…", chatSend:"Tuma", chatClose:"Funga", chatWait:"Inaandika…",
+    chatHello:"Habari! Mimi ni msaidizi wa AI wa SautiPlus. Niulize chochote kuhusu sauti, vifurushi, malipo au jinsi ya kusakinisha app.",
+    chatFail:"Samahani, sikuweza kujibu sasa hivi. Angalia intaneti yako kisha ujaribu tena.", chatSlow:"Umetuma maswali mengi kwa muda mfupi. Subiri dakika moja kisha ujaribu tena.",
   },
   en:{
     title:"SautiPlus AI: a real Kiswahili voice for your script",
@@ -481,6 +528,9 @@ const T = {
       ["Can I use my own voice?","Voice cloning is part of the Starter, Pro and Business packages, and voice recording is coming soon."],
     ],
     foot:"Made in Tanzania.",
+    chatFab:"Help", chatTitle:"SautiPlus support", chatSub:"AI assistant, replies instantly", chatPh:"Type your question…", chatSend:"Send", chatClose:"Close", chatWait:"Typing…",
+    chatHello:"Hi! I'm the SautiPlus AI assistant. Ask me anything about voices, packages, payments or how to install the app.",
+    chatFail:"Sorry, I couldn't answer just now. Check your internet and try again.", chatSlow:"You've sent many questions in a short time. Wait a minute and try again.",
   },
 };
 
@@ -515,6 +565,9 @@ function render(){
   $("#faq").innerHTML = t("faq").map(([q,a]) => `<details class="rv"><summary>${q}</summary><p>${a}</p></details>`).join("");
   $("#typed").textContent = t("demoScript");
   if(apkInfo) $("#apkMeta").textContent = t("meta")(apkInfo.v, apkInfo.mb);
+  $("#chatInput").placeholder = t("chatPh"); $("#chatInput").setAttribute("aria-label", t("chatPh"));
+  $("#chatSend").setAttribute("aria-label", t("chatSend")); $("#chatX").setAttribute("aria-label", t("chatClose"));
+  renderChat();
   watch();
 }
 $$("[data-lang]").forEach(b => b.onclick = () => { L = b.dataset.lang; try{ localStorage.setItem("sp-lang", L); }catch(e){} render(); });
@@ -556,6 +609,39 @@ function play(id){
 }
 audio.onended = stop;
 document.addEventListener("click", e => { const b = e.target.closest("[data-play]"); if(b) play(b.dataset.play); });
+
+/* ---------- support chat: answered by an AI on the SautiPlus server ---------- */
+const API = "https://zvsphyuxyidxarimngbr.supabase.co/functions/v1/api";
+const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+let chat = [], chatBusy = false; // chat: {role:"user"|"bot", text} or a failed reply {role:"bot", failed:"chatFail"}
+function renderChat(){
+  const log = $("#chatLog");
+  log.innerHTML = `<div class="cb bot">${escHtml(t("chatHello"))}</div>` +
+    chat.map(m => `<div class="cb ${m.role==="user"?"me":"bot"}">${escHtml(m.failed ? t(m.failed) : m.text)}</div>`).join("") +
+    (chatBusy ? `<div class="cb bot wait" role="status" aria-label="${t("chatWait")}"><i></i><i></i><i></i></div>` : "");
+  log.scrollTop = log.scrollHeight;
+}
+function toggleChat(open){
+  document.body.classList.toggle("chat-open", open);
+  $("#chatFab").setAttribute("aria-expanded", open);
+  if(open){ renderChat(); setTimeout(() => $("#chatInput").focus(), 60); } else $("#chatFab").focus();
+}
+$("#chatFab").onclick = () => toggleChat(true);
+$("#chatX").onclick = () => toggleChat(false);
+addEventListener("keydown", e => { if(e.key === "Escape" && document.body.classList.contains("chat-open")) toggleChat(false); });
+$("#chatForm").onsubmit = async e => {
+  e.preventDefault();
+  const text = $("#chatInput").value.trim();
+  if(!text || chatBusy) return;
+  $("#chatInput").value = "";
+  chat.push({ role:"user", text }); chatBusy = true; renderChat();
+  try{
+    const r = await fetch(API + "/support", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ lang:L, messages:chat.filter(m => !m.failed).slice(-12).map(m => ({ role:m.role, text:m.text })) }) });
+    if(!r.ok) throw r.status;
+    chat.push({ role:"bot", text:(await r.json()).reply });
+  }catch(err){ chat.push({ role:"bot", failed: err === 429 ? "chatSlow" : "chatFail" }); }
+  chatBusy = false; renderChat();
+};
 
 /* ---------- tabs ---------- */
 $$("[data-tab]").forEach(b => b.onclick = () => {
