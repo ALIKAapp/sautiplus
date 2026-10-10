@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>SautiPlus Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Same tokens as the app: dark-first, gold accent. */
+:root{
+  --bg:#1B1B1C; --surface:#242426; --surface-2:#2E2E31; --line:#3A3A3E;
+  --fg:#F4F3EF; --muted:#A3A19B; --gold:#E8C055; --gold-ink:#1B1B1C;
+  --ok:#5BC48A; --warn:#E08A5B; --bad:#E5645A;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r-md:14px; color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){ --bg:#FAF9F6; --surface:#FFFFFF; --surface-2:#F1EFEA; --line:#E2DFD8; --fg:#1B1B1C; --muted:#6B6963; --gold:#C99A1E; --ok:#2E8B57; --warn:#B8612F; --bad:#C0392B; color-scheme:light; }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+a{color:var(--gold)}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 16px 48px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 14px}
+header h1{margin:0;font-size:20px;font-weight:800;flex:1;display:flex;align-items:center;gap:10px}
+header h1 svg{width:28px;height:28px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;color:var(--fg)}
+.btn:hover{background:var(--surface)}
+.btn.gold{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+nav.tabs button{padding:10px 14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button.on{color:var(--fg);border-bottom-color:var(--gold)}
+h2{font-size:16px;margin:26px 0 10px}
+h2:first-child{margin-top:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:14px}
+.tile .k{font-size:13px;color:var(--muted)}
+.tile .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:2px}
+.tile .s{font-size:12px;color:var(--muted)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px}
+.meter{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin:10px 0 6px}
+.meter i{display:block;height:100%;background:var(--gold);border-radius:4px}
+.meter i.warn{background:var(--warn)}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;animation:blink 2s ease-in-out infinite}
+@keyframes blink{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.live{animation:none}}
+.flag{display:flex;gap:8px;align-items:flex-start;font-size:14px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--r-md);padding:12px 14px;color:var(--muted)}
+
+/* single-series bar chart */
+.chart{position:relative;height:200px;display:flex;align-items:flex-end;gap:2px;padding:0 0 22px;border-bottom:0}
+.chart .col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;cursor:default}
+.chart .bar{width:min(70%,28px);background:var(--gold);border-radius:4px 4px 0 0;min-height:0}
+.chart .col:hover .bar,.chart .col:focus .bar{filter:brightness(1.15)}
+.chart .lbl{position:absolute;bottom:-20px;font-size:11px;color:var(--muted);white-space:nowrap}
+.chart .base{position:absolute;left:0;right:0;bottom:22px;border-top:1px solid var(--line)}
+.chart .grid{position:absolute;left:0;right:0;border-top:1px dashed var(--line);opacity:.5;pointer-events:none}
+.chart .gl{position:absolute;left:0;transform:translateY(-100%);font-size:11px;color:var(--muted)}
+.tip{position:fixed;pointer-events:none;background:var(--fg);color:var(--bg);font-size:13px;padding:6px 10px;border-radius:8px;z-index:20;white-space:nowrap;opacity:0;transition:opacity .1s}
+.tip.show{opacity:1}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.hbars{display:flex;flex-direction:column;gap:8px}
+.hb{display:grid;grid-template-columns:110px 1fr 44px;gap:8px;align-items:center;font-size:13px}
+.hb .t{height:10px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.hb .t i{display:block;height:100%;background:var(--gold);border-radius:0 4px 4px 0}
+.hb .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.hb span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar input{flex:1;min-width:200px}
+input,textarea{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--fg);font:inherit;font-size:15px;width:100%}
+textarea{resize:vertical;min-height:100px}
+label{font-size:13px;font-weight:600;display:block;margin-bottom:6px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-md)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--surface);color:var(--muted);font-weight:600;font-size:13px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2)}
+.pill.gold{background:var(--gold);color:var(--gold-ink)}
+.pill.warn{color:var(--warn)}
+.pill.bad{color:var(--bad)}
+.pill.ok{color:var(--ok)}
+
+.notes{display:flex;flex-direction:column;gap:10px}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.note div{flex:1;min-width:0}
+.note b{display:block}
+.note p{margin:4px 0;white-space:pre-wrap;word-wrap:break-word}
+.form{display:flex;flex-direction:column;gap:12px;max-width:620px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:30}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+/* Login (shown until the admin password is accepted on this device) */
+.gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:20px;overflow-y:auto}
+.gate form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+.gate h2{margin:0;font-size:24px}
+.gate .btn{justify-content:center;padding:12px;font-size:15px}
+.gate .err{color:var(--bad);font-size:14px;min-height:1.4em;margin:0}
+body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs{overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;flex:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.row2{grid-template-columns:1fr}}
+.said{white-space:normal;min-width:220px;max-width:420px}
+tr.done td{opacity:.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><svg viewBox="0 0 64 64" aria-hidden="true" id="mark"></svg>SautiPlus Admin</h1>
+    <button class="btn" id="refresh">Refresh</button>
+    <a class="btn" href="./" id="toApp">Back to app</a>
+    <button class="btn" id="logout">Log out</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="overview" class="on">Overview</button>
+    <button role="tab" data-tab="users">Users</button>
+    <button role="tab" data-tab="payments">Payments <span class="pill gold" id="payCount" hidden></span></button>
+    <button role="tab" data-tab="support">Support <span class="pill gold" id="supCount" hidden></span></button>
+    <button role="tab" data-tab="access">Full access</button>
+    <button role="tab" data-tab="clones">Voice clones</button>
+    <button role="tab" data-tab="notify">Notifications</button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <section data-pane="overview">
+    <h2>Users</h2>
+    <div class="tiles" id="tUsers"></div>
+
+    <h2>Usage</h2>
+    <div class="tiles" id="tUsage"></div>
+
+    <h2>ElevenLabs API credits</h2>
+    <div id="eleven"></div>
+
+    <h2>Voice overs per day <span class="muted small">· last 14 days</span></h2>
+    <div class="panel"><div class="chart" id="chart" role="img"></div></div>
+
+    <div class="grid2" style="margin-top:10px">
+      <div class="panel"><h2 style="margin-top:0">Most used voices</h2><div class="hbars" id="bVoices"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Language</h2><div class="hbars" id="bLangs"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Expressions</h2><div class="hbars" id="bExpr"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Users per package</h2><div class="hbars" id="bPlans"></div></div>
+    </div>
+  </section>
+
+  <!-- USERS -->
+  <section data-pane="users" hidden>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search name, phone or email…" aria-label="Search users">
+      <button class="btn gold" id="csv">Download CSV (Excel)</button>
+    </div>
+    <p class="muted small" id="uCount"></p>
+    <div class="tbl"><table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Lang</th><th>Package</th><th class="num">Balance</th><th class="num">Voice overs</th><th class="num">Minutes made</th><th>Last active</th><th>Joined</th><th></th></tr></thead>
+      <tbody id="uBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- PAYMENTS -->
+  <section data-pane="payments" hidden>
+    <p class="muted">When a user asks for a package in the app, the request appears here. Collect the money (call them or WhatsApp), then press <b>Approve</b>: their minutes are added and they see it in the app within 2 minutes.</p>
+    <h2>Waiting for you</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>User</th><th>Package</th><th class="num">Amount</th><th class="num">Minutes</th><th>Pay with</th><th>Asked</th><th></th></tr></thead>
+      <tbody id="pPending"></tbody>
+    </table></div>
+    <h2>Done</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>User</th><th>Package</th><th class="num">Amount</th><th>Result</th><th>When</th></tr></thead>
+      <tbody id="pDone"></tbody>
+    </table></div>
+  </section>
+
+  <!-- SUPPORT: contacts people left in the support chat -->
+  <section data-pane="support" hidden>
+    <p class="muted">When someone writes a phone number or an email in the support chat (in the app or on the website), it appears here with what they wrote. Contact them, then press <b>Done</b>.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Contact</th><th>Who</th><th>What they wrote</th><th>From</th><th>When</th><th></th></tr></thead>
+      <tbody id="sBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- FULL ACCESS: emails that use everything for free -->
+  <section data-pane="access" hidden>
+    <p class="muted">People on this list use every feature for free and without limits: their balance is never reduced and the daily trial limit does not apply. Use the email they sign up with. You can add an email before the person has an account.</p>
+    <form class="form panel" id="aForm">
+      <div class="row2">
+        <div><label for="aEmail">Email</label><input id="aEmail" type="email" inputmode="email" autocomplete="off" placeholder="name@example.com"></div>
+        <div><label for="aNote">Note (optional)</label><input id="aNote" maxlength="200" placeholder="e.g. Marketing partner"></div>
+      </div>
+      <div><button class="btn gold" id="aAdd">Give full access</button></div>
+    </form>
+    <h2>Who has full access</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Email</th><th>Note</th><th>Account</th><th>Added</th><th></th></tr></thead>
+      <tbody id="aBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- CLONES -->
+  <section data-pane="clones" hidden>
+    <p class="muted">Cloned voices take up slots in your ElevenLabs plan. Delete the ones nobody uses to free space for new clones. Deleting removes the voice from ElevenLabs too and can't be undone.</p>
+    <div id="cFlag"></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Voice</th><th>Owner</th><th class="num">Uses</th><th>Last used</th><th>Created</th><th>Status</th><th></th></tr></thead>
+      <tbody id="cBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- NOTIFICATIONS -->
+  <section data-pane="notify" hidden>
+    <form class="form panel" id="nForm">
+      <div><label for="nTitle">Title</label><input id="nTitle" maxlength="120" placeholder="e.g. Sauti mpya zimeongezwa!"></div>
+      <div><label for="nBody">Message</label><textarea id="nBody" maxlength="1000" placeholder="Write the message every user will see in the app…"></textarea></div>
+      <p class="muted small" style="margin:0">Sent to all users. They see it under the bell icon the next time they open the app (or within 2 minutes if it's open).</p>
+      <div><button class="btn gold" id="nSend">Send to all users</button></div>
+    </form>
+    <h2>Sent</h2>
+    <div class="notes" id="nList"></div>
+  </section>
+</div>
+<div class="gate" id="gate" hidden>
+  <form id="gateForm">
+    <h2>SautiPlus Admin</h2>
+    <p class="muted" style="margin:-6px 0 4px">For the SautiPlus owner only. Use the admin email and the admin password.</p>
+    <div><label for="gEmail">Admin email</label><input id="gEmail" type="email" inputmode="email" autocomplete="username"></div>
+    <div><label for="gPass">Admin password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+    <p class="err" id="gErr" role="alert"></p>
+    <button class="btn gold" id="gGo">Open admin panel</button>
+    <a class="btn" href="./">Back to app</a>
+  </form>
+</div>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const VOICE_NAMES = { albert:"Albert", baraka:"Baraka", juliana:"Juliana", annie:"Juliana", davis:"Mchungaji Davis", anthony:"Anthony", mariam:"Mariam", esther:"Esther", arabella:"Arabella", jane:"Jane", jessa:"Jessa", adam:"Adam", mark:"Mark", christopher:"Christopher",
+  neema:"Neema", juma:"Mzee Juma", zawadi:"Zawadi", ethan:"Ethan", grace:"Grace", ryan:"Ryan", amara:"Amara" }; // second line: voices from the first version, still in old history
+const PLAN_NAMES = { trial:"Free trial", mini:"Mini", starter:"Starter", pro:"Pro", business:"Business" };
+const LANG_NAMES = { sw:"Kiswahili", en:"English" };
+const UNUSED_DAYS = 30;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n = x => Number(x||0).toLocaleString("en-US");
+const mins = s => (Number(s||0)/60).toLocaleString("en-US",{maximumFractionDigits:1});
+const clock = s => { s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }; // 90 -> 1:30
+const date = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+function ago(d){
+  if(!d) return "Never";
+  const s=(Date.now()-new Date(d))/1000;
+  if(s<3600) return Math.max(1,Math.round(s/60))+" min ago";
+  if(s<86400) return Math.round(s/3600)+" h ago";
+  return Math.round(s/86400)+" days ago";
+}
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2500); }
+// The admin panel talks to the online server. After the admin password is accepted, this device keeps a signed pass for 30 days.
+const API = "https://zvsphyuxyidxarimngbr.supabase.co/functions/v1/api";
+const NATIVE = !!window.Capacitor?.isNativePlatform?.(); // true when opened inside the Android app
+const pass = {
+  get(){ try{ return localStorage.getItem("sautiplus-admin") || ""; }catch(e){ return ""; } },
+  set(v){ try{ v ? localStorage.setItem("sautiplus-admin", v) : localStorage.removeItem("sautiplus-admin"); }catch(e){} },
+};
+async function call(path, opts={}){
+  return fetch(API + path.replace("/admin/api/", "/admin/"), { ...opts, headers:{ "Content-Type":"application/json", "x-admin":pass.get() } });
+}
+async function api(path, opts={}){
+  const r = await call(path, opts);
+  if(r.status===401){ showGate(); throw new Error("logged out"); }
+  if(!r.ok) throw new Error(await r.text());
+  const ct=r.headers.get("content-type")||""; return ct.includes("json") ? r.json() : r.text();
+}
+function showGate(msg){
+  pass.set("");
+  if(!$("gEmail").value){ try{ $("gEmail").value = JSON.parse(localStorage.getItem("sautiplus")||"{}").user?.email || ""; }catch(e){} } // the email used in the app on this phone
+  $("gErr").textContent = msg || ""; $("gate").hidden = false;
+  setTimeout(()=>($("gEmail").value ? $("gPass") : $("gEmail")).focus(), 50);
+}
+$("gateForm").onsubmit = async e=>{
+  e.preventDefault();
+  $("gErr").textContent = ""; $("gGo").disabled = true;
+  try{
+    const r = await fetch(API+"/admin/unlock", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ email:$("gEmail").value.trim(), password:$("gPass").value }) });
+    if(r.ok){ pass.set((await r.json()).token); $("gPass").value=""; $("gate").hidden = true; load(current()); }
+    else $("gErr").textContent = r.status===429 ? "Too many tries. Wait 15 minutes and try again." : r.status===503 ? "The admin password is not set on the server yet." : "Wrong email or password.";
+  }catch(err){ $("gErr").textContent = "No connection. Check your internet and try again."; }
+  $("gGo").disabled = false;
+};
+$("logout").onclick = ()=>showGate();
+// Android back button: go back to the app
+if(NATIVE) window.Capacitor.Plugins.App?.addListener("backButton", ()=>{ location.href = "./"; });
+$("mark").innerHTML = [[0,20,18],[1,10,38],[2,2,54],[3,16,22,1],[4,9,40],[5,19,18]].map(([i,y,h,g])=>`<rect x="${8+i*9.4}" y="${y+4}" width="5.4" height="${h}" rx="2.7" fill="${g?'var(--gold)':'var(--fg)'}"/>`).join("");
+
+/* tabs */
+document.querySelector(".tabs").onclick = e=>{
+  const b=e.target.closest("[data-tab]"); if(!b) return;
+  document.querySelectorAll("[data-tab]").forEach(x=>{ x.classList.toggle("on",x===b); x.setAttribute("aria-selected",x===b); });
+  document.querySelectorAll("[data-pane]").forEach(p=>p.hidden = p.dataset.pane!==b.dataset.tab);
+  load(b.dataset.tab);
+};
+const current = () => document.querySelector("[data-tab].on").dataset.tab;
+$("refresh").onclick = ()=>load(current());
+
+const tile = (k,v,s="") => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+function hbars(el, rows, label){
+  const max = Math.max(1, ...rows.map(r=>r.v));
+  $(el).innerHTML = rows.length ? rows.map(r=>`<div class="hb"><span title="${esc(r.k)}">${esc(r.k)}</span><div class="t"><i style="width:${r.v/max*100}%"></i></div><span class="n">${n(r.v)}</span></div>`).join("") : `<span class="muted small">No ${label} yet.</span>`;
+}
+
+/* overview */
+async function loadOverview(){
+  const { stats:s, eleven, elevenConfigured, model } = await api("/admin/api/overview");
+  $("tUsers").innerHTML =
+    tile("Total users", n(s.users_total), `+${n(s.users_new_7d)} this week`) +
+    tile("Active (7 days)", n(s.users_active_7d), `${n(s.users_active_30d)} in 30 days`) +
+    tile("On a paid package", n(s.paying_users), s.users_total ? Math.round(s.paying_users/s.users_total*100)+"% of users" : "") +
+    tile("Revenue (30 days)", n(s.revenue_30d)+" TSh", `${n(s.revenue_total)} TSh all time`) +
+    tile("Payment requests waiting", n(s.pending_purchases), s.pending_purchases ? "open the Payments tab" : "none");
+  $("payCount").hidden = !s.pending_purchases; $("payCount").textContent = s.pending_purchases;
+  $("tUsage").innerHTML =
+    tile("Voice overs made", n(s.gens_total), `${n(s.gens_7d)} this week`) +
+    tile("Minutes generated", mins(s.seconds_total)) +
+    tile("Characters sent to ElevenLabs", n(s.chars_30d), "last 30 days") +
+    tile("Free-trial characters today", n(s.trial_chars_today), "daily safety limit: 6,000") +
+    tile("Failed (7 days)", n(s.failed_7d), s.failed_7d ? "check your ElevenLabs credits / key" : "all good");
+
+  renderCredits({ eleven, elevenConfigured, model });
+
+  // daily chart
+  const days = s.daily || [];
+  const max = Math.max(1, ...days.map(d=>d.gens));
+  const top = niceMax(max);
+  $("chart").setAttribute("aria-label", "Voice overs per day: " + days.map(d=>`${date(d.day)} ${d.gens}`).join(", "));
+  // bars sit in the 178px above the 22px date strip; grid lines at the top and the middle of that box
+  $("chart").innerHTML = `<div class="grid" style="top:0"><span class="gl" style="transform:none">${n(top)}</span></div>
+    <div class="grid" style="bottom:111px"><span class="gl">${n(top/2)}</span></div>
+    <div class="base"></div>` +
+    days.map((d,i)=>{
+      const dt=new Date(d.day+"T00:00:00");
+      const lbl = (i%2===days.length%2 || days.length<8) ? dt.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "";
+      return `<div class="col" tabindex="0" data-tip="${esc(dt.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}))} · ${n(d.gens)} voice overs · ${n(d.signups)} sign-ups">
+        <div class="bar" style="height:${d.gens/top*(100)}%"></div><span class="lbl">${lbl}</span></div>`;
+    }).join("");
+
+  hbars("bVoices", (s.voices||[]).map(x=>({k:VOICE_NAMES[x.voice_id]||x.voice_id, v:x.gens})), "voice overs");
+  hbars("bLangs", (s.langs||[]).map(x=>({k:LANG_NAMES[x.lang]||x.lang, v:x.gens})), "voice overs");
+  hbars("bExpr", (s.expressions||[]).map(x=>({k:x.expression==="auto"?"Auto-expression":x.expression[0].toUpperCase()+x.expression.slice(1), v:x.gens})), "voice overs");
+  hbars("bPlans", (s.plans||[]).map(x=>({k:PLAN_NAMES[x.plan_id]||x.plan_id, v:x.users})), "users");
+}
+// ElevenLabs credits, read straight from ElevenLabs. Refreshed every 30 seconds while the Overview tab is open.
+function renderCredits({ eleven, elevenConfigured, model }){
+  if(!elevenConfigured){
+    $("eleven").innerHTML = `<div class="flag">ElevenLabs key not added yet. It must be added to the online server (Supabase secret <b>ELEVENLABS_API_KEY</b>) to see your credits and voice slots here.</div>`;
+    return;
+  }
+  if(eleven?.error){ $("eleven").innerHTML = `<div class="flag">Couldn't read ElevenLabs usage: ${esc(eleven.error)}</div>`; return; }
+  const used=eleven.character_count||0, lim=eleven.character_limit||0, left=Math.max(0,lim-used), pct=lim?used/lim*100:0;
+  const vUsed=eleven.voice_slots_used ?? null, vLim=eleven.voice_limit ?? null;
+  const reset = eleven.next_character_count_reset_unix ? date(eleven.next_character_count_reset_unix*1000) : "—";
+  const now = new Date().toLocaleTimeString("en-GB");
+  $("eleven").innerHTML = `<div class="grid2">
+    <div class="panel"><div class="k muted small"><span class="live"></span>Credits available · live · updated ${now}</div>
+      <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums">${n(left)} <span class="muted small" style="font-weight:500">left of ${n(lim)}</span></div>
+      <div class="meter"><i class="${pct>85?"warn":""}" style="width:${Math.min(100,pct)}%"></i></div>
+      <div class="muted small">${n(used)} used (${pct.toFixed(1)}%) · resets ${reset} · ${esc(eleven.tier||"")} plan · model ${esc(model)}</div>
+      ${pct>85?`<div class="small" style="color:var(--warn);margin-top:6px">⚠ Running low. Top up before users start getting failed voice overs.</div>`:""}</div>
+    <div class="panel"><div class="k muted small">Voice clone slots</div>
+      <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums">${vUsed==null?"—":n(vUsed)} <span class="muted small" style="font-weight:500">used of ${vLim==null?"—":n(vLim)}</span></div>
+      <div class="meter"><i class="${vLim&&vUsed/vLim>.85?"warn":""}" style="width:${vLim?Math.min(100,vUsed/vLim*100):0}%"></i></div>
+      <div class="muted small"><a href="#" id="toClones">Manage clones →</a></div></div>
+  </div>`;
+  $("toClones").onclick = e=>{ e.preventDefault(); document.querySelector('[data-tab="clones"]').click(); };
+}
+setInterval(async ()=>{
+  if(document.hidden || current()!=="overview") return;
+  try{ renderCredits(await api("/admin/api/credits")); }catch(e){}
+}, 30000);
+function niceMax(v){ const p=Math.pow(10,Math.floor(Math.log10(v))); for(const m of [1,2,5,10]) if(m*p>=v) return m*p; return 10*p; }
+
+/* tooltip for chart */
+const tip=$("tip");
+function showTip(el, x, y){ tip.textContent=el.dataset.tip; tip.classList.add("show"); const w=tip.offsetWidth; tip.style.left=Math.min(innerWidth-w-8, Math.max(8, x-w/2))+"px"; tip.style.top=(y-40)+"px"; }
+$("chart").addEventListener("mousemove", e=>{ const c=e.target.closest("[data-tip]"); if(!c){ tip.classList.remove("show"); return; } showTip(c, e.clientX, e.clientY); });
+$("chart").addEventListener("mouseleave", ()=>tip.classList.remove("show"));
+$("chart").addEventListener("focusin", e=>{ const c=e.target.closest("[data-tip]"); if(c){ const r=c.getBoundingClientRect(); showTip(c, r.left+r.width/2, r.top+r.height/2); } });
+$("chart").addEventListener("focusout", ()=>tip.classList.remove("show"));
+
+/* users */
+let USERS=[];
+async function loadUsers(){ USERS = await api("/admin/api/users"); renderUsers(); }
+function renderUsers(){
+  const q=$("q").value.trim().toLowerCase();
+  const list = q ? USERS.filter(u=>[u.name,u.phone,u.email].some(x=>String(x).toLowerCase().includes(q))) : USERS;
+  $("uCount").textContent = `${list.length} of ${USERS.length} users`;
+  $("uBody").innerHTML = list.length ? list.map(u=>`<tr>
+    <td>${esc(u.name)}</td>
+    <td><a href="tel:${esc(u.phone)}">${esc(u.phone)}</a> · <a href="https://wa.me/${esc(u.phone.replace(/\D/g,""))}" target="_blank" rel="noopener">WhatsApp</a></td>
+    <td><a href="mailto:${esc(u.email)}">${esc(u.email)}</a></td>
+    <td>${LANG_NAMES[u.lang]||u.lang}</td>
+    <td><span class="pill ${u.plan_id!=="trial"?"gold":""}">${PLAN_NAMES[u.plan_id]||esc(u.plan_id)}</span></td>
+    <td class="num">${clock(u.balance_sec)}</td>
+    <td class="num">${n(u.gens)}</td><td class="num">${mins(u.seconds)}</td>
+    <td>${ago(u.last_active_at)}</td><td>${date(u.created_at)}</td>
+    <td><button class="btn" data-grant="${u.id}" data-name="${esc(u.name)}">+ Minutes</button></td></tr>`).join("") : `<tr><td colspan="11" class="muted">${USERS.length?"No match.":"No users yet."}</td></tr>`;
+}
+$("q").addEventListener("input", renderUsers);
+$("csv").hidden = NATIVE; // saving files from inside the phone app is not supported; use the website or a computer
+$("csv").onclick = async ()=>{
+  try{
+    const r = await call("/admin/users.csv");
+    if(!r.ok) throw new Error(await r.text());
+    const a = document.createElement("a"); a.href = URL.createObjectURL(await r.blob()); a.download = "sautiplus-users.csv"; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  }catch(err){ toast("Download failed: "+err.message); }
+};
+$("uBody").onclick = async e=>{
+  const b=e.target.closest("[data-grant]"); if(!b) return;
+  const v = prompt(`How many minutes to add for ${b.dataset.name}?\n(Use a minus sign to take minutes away, e.g. -5)`, "10");
+  if(v===null) return;
+  const minutes = Number(v.replace(",", "."));
+  if(!Number.isFinite(minutes) || minutes===0){ toast("Type a number of minutes, e.g. 10"); return; }
+  try{ const r = await api(`/admin/api/users/${b.dataset.grant}/minutes`, { method:"POST", body:JSON.stringify({ minutes }) }); toast(`Done. New balance: ${clock(r.balance)}`); loadUsers(); }
+  catch(err){ toast("Failed: "+err.message); }
+};
+
+/* payments */
+async function loadPayments(){
+  const list = await api("/admin/api/purchases");
+  const who = x => x.user ? `${esc(x.user.name)}<div class="muted small"><a href="tel:${esc(x.user.phone)}">${esc(x.user.phone)}</a> · <a href="https://wa.me/${esc(x.user.phone.replace(/\D/g,""))}" target="_blank" rel="noopener">WhatsApp</a></div>` : `<span class="muted">Deleted user</span>`;
+  const pend = list.filter(x=>x.status==="pending"), done = list.filter(x=>x.status!=="pending");
+  $("payCount").hidden = !pend.length; $("payCount").textContent = pend.length;
+  $("pPending").innerHTML = pend.length ? pend.map(x=>`<tr>
+    <td>${who(x)}</td><td><span class="pill gold">${PLAN_NAMES[x.plan_id]||esc(x.plan_id)}</span></td>
+    <td class="num">${n(x.amount_tsh)} TSh</td><td class="num">${mins(x.seconds)}</td><td>${esc(x.method||"—")}</td><td>${ago(x.created_at)}</td>
+    <td><button class="btn gold" data-pay="approve" data-id="${x.id}" data-what="${esc((x.user?.name||"user")+" · "+(PLAN_NAMES[x.plan_id]||x.plan_id)+" · "+n(x.amount_tsh)+" TSh")}">Approve</button>
+        <button class="btn danger" data-pay="reject" data-id="${x.id}" data-what="${esc(x.user?.name||"user")}">Reject</button></td></tr>`).join("")
+    : `<tr><td colspan="7" class="muted">No payment requests waiting.</td></tr>`;
+  $("pDone").innerHTML = done.length ? done.map(x=>`<tr>
+    <td>${x.user?esc(x.user.name):`<span class="muted">Deleted user</span>`}</td><td>${PLAN_NAMES[x.plan_id]||esc(x.plan_id)}</td>
+    <td class="num">${n(x.amount_tsh)} TSh</td><td>${x.status==="approved"?`<span class="pill ok">Approved</span>`:`<span class="pill bad">Rejected</span>`}</td>
+    <td>${date(x.decided_at||x.created_at)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">Nothing yet.</td></tr>`;
+}
+$("pPending").onclick = async e=>{
+  const b=e.target.closest("[data-pay]"); if(!b) return;
+  const approve = b.dataset.pay==="approve";
+  if(!confirm(approve ? `Have you received the money?\n\nApprove: ${b.dataset.what}\nThe minutes will be added to the user now.` : `Reject the request from ${b.dataset.what}?`)) return;
+  b.disabled=true;
+  try{ await api(`/admin/api/purchases/${b.dataset.id}/${b.dataset.pay}`, { method:"POST", body:"{}" }); toast(approve ? "Approved. Minutes added." : "Rejected"); loadPayments(); }
+  catch(err){ b.disabled=false; toast("Failed: "+err.message); }
+};
+
+/* support contacts */
+async function loadSupport(){
+  const list = await api("/admin/api/contacts");
+  const open = list.filter(x=>!x.done).length;
+  $("supCount").hidden = !open; $("supCount").textContent = open;
+  const link = x => x.kind==="phone"
+    ? `<a href="tel:${esc(x.contact)}">${esc(x.contact)}</a> · <a href="https://wa.me/${esc(x.contact.replace(/\D/g,""))}" target="_blank" rel="noopener">WhatsApp</a>`
+    : `<a href="mailto:${esc(x.contact)}">${esc(x.contact)}</a>`;
+  $("sBody").innerHTML = list.length ? list.map(x=>`<tr class="${x.done?"done":""}">
+    <td>${link(x)}</td>
+    <td>${x.user ? `${esc(x.user.name)}<div class="muted small">${esc(x.user.email)}</div>` : `<span class="muted">Not logged in</span>`}</td>
+    <td class="said">${esc(x.message)}</td>
+    <td>${x.source==="app"?"App":"Website"} · ${LANG_NAMES[x.lang]||""}</td>
+    <td>${ago(x.created_at)}</td>
+    <td><button class="btn ${x.done?"":"gold"}" data-sdone="${x.id}" data-to="${x.done?"0":"1"}">${x.done?"Reopen":"Done"}</button>
+        <button class="btn danger" data-sdel="${x.id}">Delete</button></td></tr>`).join("")
+    : `<tr><td colspan="6" class="muted">No contacts yet. They appear here when someone leaves a phone number or email in the support chat.</td></tr>`;
+}
+$("sBody").onclick = async e=>{
+  const d=e.target.closest("[data-sdone]"), x=e.target.closest("[data-sdel]");
+  try{
+    if(d){ await api(`/admin/api/contacts/${d.dataset.sdone}/done`, { method:"POST", body:JSON.stringify({ done:d.dataset.to==="1" }) }); loadSupport(); }
+    else if(x && confirm("Delete this contact?")){ await api(`/admin/api/contacts/${x.dataset.sdel}`, { method:"DELETE" }); loadSupport(); }
+  }catch(err){ toast("Failed: "+err.message); }
+};
+
+/* full access */
+async function loadAccess(){
+  const [{ owner, list }] = await Promise.all([api("/admin/api/access"), USERS.length ? null : loadUsers()]);
+  const account = email => { const u = USERS.find(u=>String(u.email).toLowerCase()===email); return u ? `${esc(u.name)} <span class="pill ok">Signed up</span>` : `<span class="muted">No account yet</span>`; };
+  $("aBody").innerHTML = (owner ? `<tr><td>${esc(owner)}</td><td>Owner (you)</td><td>${account(owner)}</td><td>—</td><td><span class="muted small">Always</span></td></tr>` : "") +
+    list.map(x=>`<tr><td>${esc(x.email)}</td><td>${esc(x.note||"")}</td><td>${account(x.email)}</td><td>${date(x.created_at)}</td>
+      <td><button class="btn danger" data-adel="${esc(x.email)}">Remove</button></td></tr>`).join("");
+}
+$("aForm").onsubmit = async e=>{
+  e.preventDefault();
+  const email=$("aEmail").value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast("Type the person's email address"); $("aEmail").focus(); return; }
+  $("aAdd").disabled=true;
+  try{ await api("/admin/api/access", { method:"POST", body:JSON.stringify({ email, note:$("aNote").value }) }); $("aEmail").value=""; $("aNote").value=""; toast(email+" now has full access"); loadAccess(); }
+  catch(err){ toast("Failed: "+err.message); }
+  $("aAdd").disabled=false;
+};
+$("aBody").onclick = async e=>{
+  const b=e.target.closest("[data-adel]"); if(!b) return;
+  if(!confirm(`Remove full access for ${b.dataset.adel}? They go back to their normal balance.`)) return;
+  try{ await api("/admin/api/access/"+encodeURIComponent(b.dataset.adel), { method:"DELETE" }); toast("Removed"); loadAccess(); } catch(err){ toast("Failed: "+err.message); }
+};
+
+/* clones */
+async function loadClones(){
+  const { clones, elevenConfigured, error } = await api("/admin/api/clones");
+  $("cFlag").innerHTML = !elevenConfigured ? `<div class="flag" style="margin-bottom:10px">ElevenLabs key not added yet, so only clones recorded in the SautiPlus database are shown.</div>`
+    : error ? `<div class="flag" style="margin-bottom:10px">Couldn't read voices from ElevenLabs: ${esc(error)}</div>` : "";
+  const cutoff = Date.now() - UNUSED_DAYS*86400000;
+  const unused = c => !c.lastUsedAt || new Date(c.lastUsedAt) < cutoff;
+  clones.sort((a,b)=> (unused(b)-unused(a)) || (new Date(a.lastUsedAt||0)-new Date(b.lastUsedAt||0)));
+  $("cBody").innerHTML = clones.length ? clones.map(c=>`<tr>
+    <td><b>${esc(c.name)}</b><div class="muted small">${esc(c.voiceId)}</div></td>
+    <td>${c.owner?`${esc(c.owner.name)}<div class="muted small">${esc(c.owner.phone)}</div>`:`<span class="muted">Not linked to a user</span>`}</td>
+    <td class="num">${n(c.uses)}</td>
+    <td>${ago(c.lastUsedAt)}</td><td>${date(c.createdAt)}</td>
+    <td>${c.inEleven===false?`<span class="pill bad">Missing in ElevenLabs</span>`: unused(c)?`<span class="pill warn">Unused ${UNUSED_DAYS}+ days</span>`:`<span class="pill ok">In use</span>`}</td>
+    <td><button class="btn danger" data-del="${esc(c.voiceId)}" data-name="${esc(c.name)}">Delete</button></td></tr>`).join("")
+    : `<tr><td colspan="7" class="muted">No cloned voices yet.</td></tr>`;
+}
+$("cBody").onclick = async e=>{
+  const b=e.target.closest("[data-del]"); if(!b) return;
+  if(!confirm(`Delete the voice "${b.dataset.name}"? This removes it from ElevenLabs and can't be undone.`)) return;
+  b.disabled=true;
+  try{ await api(`/admin/api/clones/${encodeURIComponent(b.dataset.del)}`, { method:"DELETE" }); toast("Voice deleted"); loadClones(); }
+  catch(err){ b.disabled=false; toast("Delete failed: "+err.message); }
+};
+
+/* notifications */
+async function loadNotes(){
+  const list = await api("/admin/api/notifications");
+  $("nList").innerHTML = list.length ? list.map(x=>`<div class="note"><div><b>${esc(x.title)}</b><p>${esc(x.body)}</p><span class="muted small">${new Date(x.created_at).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"})}</span></div>
+    <button class="btn danger" data-ndel="${x.id}">Delete</button></div>`).join("") : `<p class="muted">Nothing sent yet.</p>`;
+}
+$("nForm").onsubmit = async e=>{
+  e.preventDefault();
+  const title=$("nTitle").value.trim(), body=$("nBody").value.trim();
+  if(!title||!body){ toast("Write a title and a message"); return; }
+  if(!confirm(`Send "${title}" to all users?`)) return;
+  $("nSend").disabled=true;
+  try{ await api("/admin/api/notifications",{ method:"POST", body:JSON.stringify({title,body}) }); $("nTitle").value=""; $("nBody").value=""; toast("Sent to all users"); loadNotes(); }
+  catch(err){ toast("Failed: "+err.message); }
+  $("nSend").disabled=false;
+};
+$("nList").onclick = async e=>{
+  const b=e.target.closest("[data-ndel]"); if(!b) return;
+  if(!confirm("Delete this notification? Users will no longer see it.")) return;
+  try{ await api(`/admin/api/notifications/${b.dataset.ndel}`,{ method:"DELETE" }); loadNotes(); } catch(err){ toast("Failed: "+err.message); }
+};
+
+/* load */
+const LOADERS = { overview:loadOverview, users:loadUsers, payments:loadPayments, support:loadSupport, access:loadAccess, clones:loadClones, notify:loadNotes };
+async function load(tab){ try{ await LOADERS[tab](); } catch(err){ if(err.message!=="logged out") toast("Couldn't load: "+err.message); } }
+if(pass.get()) load("overview"); else showGate();
+</script>
+</body>
+</html>
