@@ -185,6 +185,9 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 .rec-row b{display:block;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
 .rec-row span{font-size:13px;color:var(--muted)}
 .rec audio{width:100%}
+.rec-or{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rec-or .chip{background:transparent;color:var(--fg)}
+.rec-or small{font-size:12px;color:var(--muted)}
 /* Terms and conditions */
 #termsSheet{z-index:35;height:88%}
 .terms h3{margin:14px 0 4px;font-size:15px}
@@ -396,10 +399,16 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
   <div class="sheet-body rec">
     <div class="field"><label for="recName" data-i18n="recNameLabel"></label><input id="recName" maxlength="40" autocomplete="off" data-i18n-ph="recNamePh"></div>
     <p class="sub" data-i18n="recHow"></p>
-    <blockquote class="rec-script" data-i18n="recScript"></blockquote>
+    <div class="seg" id="recLang" role="group" data-i18n-aria="recScriptLang"><button type="button" data-rl="sw">Kiswahili</button><button type="button" data-rl="en">English</button></div>
+    <blockquote class="rec-script" id="recScriptText"></blockquote>
     <div class="rec-row">
       <button class="rec-btn" id="recBtn" aria-pressed="false"></button>
       <div><b id="recTime">0:00</b><span id="recState"></span></div>
+    </div>
+    <div class="rec-or">
+      <button type="button" class="chip" id="recUpload"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-5 5m5-5 5 5M5 20h14"/></svg><span data-i18n="recUpload"></span></button>
+      <small data-i18n="recUploadHint"></small>
+      <input type="file" id="recFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.webm,.flac,.mp4" hidden>
     </div>
     <audio id="recAudio" controls hidden></audio>
     <span class="err" id="recErr" role="alert"></span>
@@ -496,7 +505,7 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 const CONFIG = { API: "https://zvsphyuxyidxarimngbr.supabase.co/functions/v1/api", CHARS_PER_SEC: 15, TRIAL_SECONDS: 10, REFRESH_EVERY_MS: 120000 };
 const NATIVE = !!window.Capacitor?.isNativePlatform?.(); // true inside the Android app
 // Version of these screens. Raise it before every `npm run publish`: phones download the new screens when it is higher than theirs.
-const WEB_VERSION = "1.4.0";
+const WEB_VERSION = "1.4.1";
 // The SautiPlus website. It also holds app/version.json, which tells the app about updates.
 const SITE = "https://alikaapp.github.io/sautiplus";
 
@@ -620,7 +629,10 @@ const T = {
     recStart:"Anza kurekodi", recStop:"Simamisha kurekodi", recIdle:"Bonyeza kitufe uanze", recGoing:"Inarekodi… soma maandishi", recShort:n=>`Fupi mno. Rekodi angalau sekunde ${n}.`, recReady:"Sikiliza, kisha tengeneza sauti yako. Unaweza kurekodi tena.",
     recSend:"Tengeneza sauti yangu", recSending:"Inatengeneza sauti yako…",
     recNoMic:"Hatukuweza kufungua kipaza sauti. Ruhusu SautiPlus kutumia kipaza sauti (microphone) kisha ujaribu tena.",
-    recNeedApp:"Toleo hili la app haliwezi kurekodi sauti. Pakua toleo jipya kwenye alikaapp.github.io/sautiplus, au fungua tovuti hiyo na utumie SautiPlus kwenye kivinjari.",
+    recNeedApp:"Toleo hili la app haliwezi kurekodi sauti. Pakia faili la sauti yako hapa chini, au pakua toleo jipya kwenye alikaapp.github.io/sautiplus.",
+    recScriptLang:"Lugha ya maandishi ya kusoma", recUpload:"Pakia faili la sauti", recUploadHint:"MP3, WAV, M4A, AAC, OGG, FLAC au WEBM. Hadi MB 8.",
+    recTooBig:"Faili ni kubwa mno. Chagua faili lisilozidi MB 8 (takriban dakika 1 hadi 3 za sauti).", recBadFile:"Faili hili si la sauti. Chagua MP3, WAV, M4A, AAC, OGG, FLAC au WEBM.",
+    recFileReady:"Faili limepokelewa. Sikiliza, kisha tengeneza sauti yako.",
     voicePicked:v=>`Sauti: ${v}`, exprPicked:e=>`Hisia: ${e}`,
     exprSub:"Hisia hii itatumika kwenye mswada mzima. Bonyeza “Hisia za AI” kuweka hisia tofauti kwa kila sentensi.",
     autoDone:"Hisia zimewekwa kwa kila sentensi. Unaweza kuzihariri.",
@@ -713,7 +725,10 @@ const T = {
     recStart:"Start recording", recStop:"Stop recording", recIdle:"Tap the button to start", recGoing:"Recording… read the text", recShort:n=>`Too short. Record at least ${n} seconds.`, recReady:"Listen, then make your voice. You can record again.",
     recSend:"Make my voice", recSending:"Making your voice…",
     recNoMic:"We couldn't open the microphone. Allow SautiPlus to use the microphone, then try again.",
-    recNeedApp:"This version of the app can't record a voice. Download the new version at alikaapp.github.io/sautiplus, or open that website and use SautiPlus in the browser.",
+    recNeedApp:"This version of the app can't record a voice. Upload an audio file of your voice below, or download the new version at alikaapp.github.io/sautiplus.",
+    recScriptLang:"Language of the text to read", recUpload:"Upload an audio file", recUploadHint:"MP3, WAV, M4A, AAC, OGG, FLAC or WEBM. Up to 8 MB.",
+    recTooBig:"The file is too big. Choose a file of 8 MB or less (about 1 to 3 minutes of voice).", recBadFile:"This is not an audio file. Choose MP3, WAV, M4A, AAC, OGG, FLAC or WEBM.",
+    recFileReady:"File received. Listen, then make your voice.",
     voicePicked:v=>`Voice: ${v}`, exprPicked:e=>`Expression: ${e}`,
     exprSub:"This expression is used for the whole script. Tap “Auto-expression” to give each sentence its own expression.",
     autoDone:"Expressions added to each sentence. You can edit them.",
@@ -939,6 +954,7 @@ async function generate(text, voice, expr, isNew){
       if(r.headers.get("x-balance") !== null){ S.balance = +r.headers.get("x-balance"); S.total = +r.headers.get("x-total") || S.total; }
       try{ S.freeTests = JSON.parse(r.headers.get("x-free-tests")) || S.freeTests; }catch(e){}
       m.status="ready";
+      S.expr = "neutral"; // each new voice over starts from the normal expression again
     } else fail = (await r.text()).trim();
   }catch(err){ fail="offline"; }
   if(fail){
@@ -1132,6 +1148,14 @@ $("cloneGo").onclick = ()=>{
 /* ---------- voice cloning: record, send, use ----------
    The user records about a minute of their own voice. The server turns it into a voice that appears under "My voices". */
 const REC_MIN = 30, REC_MAX = 120; // seconds
+const REC_MAX_BYTES = 8 * 1024 * 1024; // biggest audio file a user can upload
+let micOff = false; // true in the first Android apps, which were built without microphone access (uploading still works)
+// The text to read is shown in Kiswahili first, whatever the app language; the switch above it changes it to English and back.
+function setRecLang(l){
+  $("recScriptText").textContent = T[l].recScript; $("recScriptText").lang = l;
+  document.querySelectorAll("#recLang [data-rl]").forEach(b=>{ const on = b.dataset.rl === l; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+}
+$("recLang").onclick = e=>{ const b = e.target.closest("[data-rl]"); if(b) setRecLang(b.dataset.rl); };
 function recStop(){ // stops the microphone; keeps a finished recording
   if(!rec) return;
   clearInterval(rec.timer);
@@ -1144,20 +1168,22 @@ function recUI(state, secs){
   $("recBtn").innerHTML = on ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>`
     : `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
   $("recTime").textContent = fmt(secs || 0);
-  $("recState").textContent = state === "going" ? t("recGoing") : state === "short" ? t("recShort", REC_MIN) : state === "ready" ? t("recReady") : t("recIdle");
+  $("recState").textContent = state === "going" ? t("recGoing") : state === "short" ? t("recShort", REC_MIN) : state === "ready" ? t(rec && rec.file ? "recFileReady" : "recReady") : t("recIdle");
   $("recSend").textContent = t(state === "sending" ? "recSending" : "recSend");
   $("recSend").disabled = state !== "ready";
-  $("recBtn").disabled = state === "sending";
+  $("recBtn").disabled = state === "sending" || micOff;
+  $("recUpload").disabled = state === "sending" || state === "going";
 }
 async function openRecorder(){
   recStop(); rec = null;
   $("recName").value = ""; $("recErr").textContent = ""; $("recAudio").hidden = true; $("recAudio").removeAttribute("src");
+  micOff = false; setRecLang("sw");
   recUI("idle", 0);
   openSheet("recSheet");
   // the first Android apps (before 1.3) were built without microphone access
   if(NATIVE){
     const build = parseInt((await window.Capacitor.Plugins.App.getInfo().catch(()=>({}))).build, 10) || 0;
-    if(build < 4){ $("recErr").textContent = t("recNeedApp"); $("recBtn").disabled = true; }
+    if(build < 4){ micOff = true; $("recErr").textContent = t("recNeedApp"); recUI("idle", 0); }
   }
 }
 $("recBtn").onclick = async ()=>{
@@ -1182,6 +1208,22 @@ $("recBtn").onclick = async ()=>{
   };
   mr.start(); recUI("going", 0);
 };
+// Instead of recording, the user can pick an audio file of their voice (a voice note, a studio recording…).
+$("recUpload").onclick = ()=>$("recFile").click();
+$("recFile").onchange = async e=>{
+  const file = e.target.files[0]; e.target.value = "";
+  if(!file) return;
+  recStop(); rec = null; $("recErr").textContent = ""; $("recAudio").hidden = true;
+  const audioFile = /^(audio|video)\//.test(file.type) || /\.(mp3|wav|m4a|aac|ogg|oga|opus|webm|flac|mp4)$/i.test(file.name);
+  if(!audioFile){ $("recErr").textContent = t("recBadFile"); recUI("idle", 0); return; }
+  if(file.size > REC_MAX_BYTES){ $("recErr").textContent = t("recTooBig"); recUI("idle", 0); return; }
+  const url = URL.createObjectURL(file);
+  // how long is it? If this phone can't read the format, let the server decide.
+  const secs = await new Promise(ok=>{ const a = new Audio(); a.preload = "metadata"; a.onloadedmetadata = ()=>ok(isFinite(a.duration) && a.duration > 0 ? a.duration : REC_MIN); a.onerror = ()=>ok(REC_MIN); setTimeout(()=>ok(REC_MIN), 4000); a.src = url; });
+  rec = { blob:file, file:file.name, secs };
+  $("recAudio").src = url; $("recAudio").hidden = false;
+  recUI(secs < REC_MIN ? "short" : "ready", secs);
+};
 $("recSend").onclick = async ()=>{
   const name = $("recName").value.trim();
   if(!name){ $("recErr").textContent = t("recNeedName"); $("recName").focus(); return; }
@@ -1189,7 +1231,7 @@ $("recSend").onclick = async ()=>{
   $("recErr").textContent = ""; recUI("sending", rec.secs);
   try{
     const audio = await new Promise((ok, no)=>{ const fr = new FileReader(); fr.onload = ()=>ok(String(fr.result).split(",")[1]); fr.onerror = no; fr.readAsDataURL(rec.blob); });
-    const r = await api("/clone", { name, audio, mime:rec.blob.type });
+    const r = await api("/clone", { name, audio, mime:rec.blob.type, file:rec.file || "" });
     if(r.status === 401) return sessionEnded();
     if(!r.ok){
       const code = (await r.text()).trim();
