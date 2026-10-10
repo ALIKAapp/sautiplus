@@ -418,7 +418,8 @@ function renderUsers(){
     <td class="num">${clock(u.balance_sec)}</td>
     <td class="num">${n(u.gens)}</td><td class="num">${mins(u.seconds)}</td>
     <td>${ago(u.last_active_at)}</td><td>${date(u.created_at)}</td>
-    <td><button class="btn" data-grant="${u.id}" data-name="${esc(u.name)}">+ Minutes</button></td></tr>`).join("") : `<tr><td colspan="11" class="muted">${USERS.length?"No match.":"No users yet."}</td></tr>`;
+    <td><button class="btn" data-grant="${u.id}" data-name="${esc(u.name)}">+ Minutes</button>
+        <button class="btn danger" data-udel="${u.id}" data-name="${esc(u.name)}" data-email="${esc(u.email)}">Delete</button></td></tr>`).join("") : `<tr><td colspan="11" class="muted">${USERS.length?"No match.":"No users yet."}</td></tr>`;
 }
 $("q").addEventListener("input", renderUsers);
 $("csv").hidden = NATIVE; // saving files from inside the phone app is not supported; use the website or a computer
@@ -431,6 +432,16 @@ $("csv").onclick = async ()=>{
   }catch(err){ toast("Download failed: "+err.message); }
 };
 $("uBody").onclick = async e=>{
+  const x=e.target.closest("[data-udel]");
+  if(x){
+    if(!confirm(`Delete ${x.dataset.name} (${x.dataset.email}) for good?
+
+Their account, balance and history are removed and cannot be brought back.`)) return;
+    x.disabled=true;
+    try{ await api(`/admin/api/users/${x.dataset.udel}`, { method:"DELETE" }); toast("User deleted"); loadUsers(); }
+    catch(err){ x.disabled=false; toast("Failed: "+err.message); }
+    return;
+  }
   const b=e.target.closest("[data-grant]"); if(!b) return;
   const v = prompt(`How many minutes to add for ${b.dataset.name}?\n(Use a minus sign to take minutes away, e.g. -5)`, "10");
   if(v===null) return;
