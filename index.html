@@ -63,6 +63,8 @@ p{margin:0;text-wrap:pretty}
 .lang button{padding:6px 11px;border-radius:999px;color:var(--mute)}
 .lang button[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
 .nav .btn{min-height:42px;padding:0 18px;font-size:14px}
+.nav-login{font-size:14.5px;font-weight:700;text-decoration:none;padding:8px 6px;white-space:nowrap}
+.nav-login:hover{color:var(--gold)}
 @media (max-width:860px){.nav-links{display:none}}
 @media (max-width:480px){.nav .btn span{display:none}.nav .btn{padding:0 13px}.nav-in{gap:10px}}
 
@@ -274,6 +276,7 @@ footer{padding:44px 0 calc(44px + env(safe-area-inset-bottom,0px));border-top:1p
     <div class="lang" role="group" aria-label="Lugha / Language">
       <button data-lang="sw" aria-pressed="true">SW</button><button data-lang="en" aria-pressed="false">EN</button>
     </div>
+    <a class="nav-login" href="app/" data-t="navLogin"></a>
     <a class="btn btn-gold" href="#pakua"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span data-t="navGet"></span></a>
   </div>
 </header>
@@ -287,7 +290,7 @@ footer{padding:44px 0 calc(44px + env(safe-area-inset-bottom,0px));border-top:1p
       <p class="lede fade" data-t="heroSub"></p>
       <div class="hero-cta fade">
         <a class="btn btn-gold" href="#pakua"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span data-t="heroGet"></span></a>
-        <a class="btn btn-line" href="#sauti" data-t="heroHear"></a>
+        <a class="btn btn-line" href="app/" data-t="heroWeb"></a>
       </div>
       <p class="hero-note fade" data-t="heroNote"></p>
     </div>
@@ -375,6 +378,7 @@ footer{padding:44px 0 calc(44px + env(safe-area-inset-bottom,0px));border-top:1p
         <a class="btn btn-ink" id="apk" href="download/SautiPlus-AI.apk" download><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></svg><span data-t="gBtn"></span></a>
         <span class="get-meta" id="apkMeta"></span>
       </div>
+      <p class="rv" style="--i:3;margin-top:22px;font-weight:600"><span data-t="gWeb"></span> <a href="app/" data-t="gWebLink" style="font-weight:700"></a></p>
     </div>
     <ol class="howto rv" style="--i:1">
       <li><div><b data-t="i1"></b><span data-t="i1p"></span></div></li>
@@ -446,10 +450,10 @@ const PLANS = [
 const T = {
   sw:{
     title:"SautiPlus AI: sauti halisi ya Kiswahili kwa maandishi yako",
-    navVoices:"Sauti", navHow:"Jinsi inavyofanya kazi", navPrice:"Bei", navFaq:"Maswali", navGet:"Pakua app",
+    navVoices:"Sauti", navHow:"Jinsi inavyofanya kazi", navPrice:"Bei", navFaq:"Maswali", navGet:"Pakua app", navLogin:"Ingia",
     h1:["Andika maneno.","Pata sauti halisi","ya Kiswahili."],
     heroSub:"SautiPlus AI inageuza maandishi yako kuwa voice over inayosikika kama mtu halisi, kwa Kiswahili au Kiingereza, ndani ya sekunde chache.",
-    heroGet:"Pakua kwa Android", heroHear:"Sikiliza sauti 13", heroNote:"Bure kuanza. Majaribio manne hayatumii salio lako.",
+    heroGet:"Pakua kwa Android", heroWeb:"Tumia bila kupakua", heroNote:"Bure kuanza. Inafanya kazi kwenye simu yoyote na kompyuta, ndani ya kivinjari chako.",
     demoScript:"Habari, mimi ni Baraka. Hii ni sauti yangu kutoka SautiPlus.", demoWho:"sauti ya studio",
     ticker:["Video za TikTok","Matangazo ya biashara","Chaneli za YouTube","Salamu za simu","Mialiko","Hadithi","Mahubiri","Podcast"],
     vTitle:"Sauti kumi na tatu. Kila moja ina tabia yake.", vSub:"Bonyeza sauti yoyote uisikilize sasa hivi. Hizi ndizo sauti zilezile utakazozipata ndani ya app.",
@@ -470,6 +474,7 @@ const T = {
     clones:n=>`Clone ${n} za sauti yako (inakuja hivi karibuni)`, mp3:"Pakua MP3 bila kikomo",
     payWith:"Lipa kwa",
     gTitle:"Weka SautiPlus kwenye simu yako.", gSub:"App ni kwa simu za Android. Inajisasisha yenyewe, kwa hiyo unasakinisha mara moja tu.",
+    gWeb:"Una iPhone au kompyuta, au hutaki kupakua?", gWebLink:"Tumia SautiPlus kwenye kivinjari",
     gBtn:"Pakua SautiPlus AI", meta:(v,mb)=>`Toleo ${v} · Android · MB ${mb}`,
     i1:"Pakua faili", i1p:"Bonyeza kitufe. Faili la SautiPlus-AI.apk litahifadhiwa kwenye simu yako.",
     i2:"Lifungue na uruhusu usakinishaji", i2p:"Simu ikiuliza, ruhusu \"Install unknown apps\" kwa kivinjari chako, kisha bonyeza Install.",
@@ -477,7 +482,8 @@ const T = {
     fTitle:"Maswali ya mara kwa mara",
     faq:[
       ["Je, SautiPlus AI ni bure?","Kuanza ni bure. Unapata salio la majaribio na miswada minne ya majaribio ambayo haitumii salio lako. Ukihitaji dakika zaidi, unanunua kifurushi."],
-      ["Inafanya kazi kwenye iPhone?","Kwa sasa app ni kwa simu za Android pekee."],
+      ["Inafanya kazi kwenye iPhone au kompyuta?","Ndiyo. App ya kupakua ni ya Android, lakini unaweza kutumia SautiPlus kwenye iPhone, kompyuta au simu yoyote kupitia kivinjari: bonyeza Ingia juu ya ukurasa huu. Akaunti, salio na sauti ni zilezile."],
+      ["Lazima nipakue app?","Hapana. Unaweza kufungua akaunti na kutengeneza sauti moja kwa moja kwenye tovuti hii bila kupakua chochote. Ukipenda, unaweza kutumia app na tovuti kwa akaunti moja."],
       ["Ninalipaje?","Ndani ya app unachagua kifurushi na kulipa kwa M-Pesa, Mixx by Yas, Airtel Money au HaloPesa. Salio linaongezwa baada ya malipo yako kuthibitishwa."],
       ["Kwa nini simu inanionya ninaposakinisha?","Android huonyesha onyo kwa kila app isiyotoka Play Store. Pakua SautiPlus kutoka ukurasa huu pekee ili uwe na uhakika unapata faili sahihi."],
       ["Nitapataje masasisho?","App inajisasisha yenyewe kila unapoifungua ukiwa na intaneti. Mara chache sana toleo jipya kabisa likihitajika, app itakuonyesha kitufe cha kulipakua."],
@@ -485,15 +491,15 @@ const T = {
     ],
     foot:"Imetengenezwa Tanzania.",
     chatFab:"Msaada", chatTitle:"Msaada wa SautiPlus", chatSub:"Msaidizi wa AI, anajibu papo hapo", chatPh:"Andika swali lako…", chatSend:"Tuma", chatClose:"Funga", chatWait:"Inaandika…",
-    chatHello:"Habari! Mimi ni msaidizi wa AI wa SautiPlus. Niulize chochote kuhusu sauti, vifurushi, malipo au jinsi ya kusakinisha app.",
+    chatHello:"Habari! Mimi ni msaidizi wa AI wa SautiPlus. Niulize chochote kuhusu sauti, vifurushi, malipo au jinsi ya kuanza.",
     chatFail:"Samahani, sikuweza kujibu sasa hivi. Angalia intaneti yako kisha ujaribu tena.", chatSlow:"Umetuma maswali mengi kwa muda mfupi. Subiri dakika moja kisha ujaribu tena.",
   },
   en:{
     title:"SautiPlus AI: a real Kiswahili voice for your script",
-    navVoices:"Voices", navHow:"How it works", navPrice:"Pricing", navFaq:"Questions", navGet:"Get the app",
+    navVoices:"Voices", navHow:"How it works", navPrice:"Pricing", navFaq:"Questions", navGet:"Get the app", navLogin:"Log in",
     h1:["Write the words.","Get a real","Kiswahili voice."],
     heroSub:"SautiPlus AI turns your script into a voice over that sounds like a real person, in Kiswahili or English, within seconds.",
-    heroGet:"Download for Android", heroHear:"Listen to 13 voices", heroNote:"Free to start. Four test scripts don't use your balance.",
+    heroGet:"Download for Android", heroWeb:"Use it without downloading", heroNote:"Free to start. Works on any phone and on computers, right in your browser.",
     demoScript:"Habari, mimi ni Baraka. Hii ni sauti yangu kutoka SautiPlus.", demoWho:"studio voice",
     ticker:["TikTok videos","Business adverts","YouTube channels","Phone greetings","Invitations","Stories","Sermons","Podcasts"],
     vTitle:"Thirteen voices. Each with its own character.", vSub:"Tap any voice to hear it right now. These are the same voices you get inside the app.",
@@ -514,6 +520,7 @@ const T = {
     clones:n=>`${n} clones of your own voice (coming soon)`, mp3:"Unlimited MP3 downloads",
     payWith:"Pay with",
     gTitle:"Put SautiPlus on your phone.", gSub:"The app is for Android phones. It updates itself, so you only install once.",
+    gWeb:"On an iPhone or a computer, or don't want to download?", gWebLink:"Use SautiPlus in your browser",
     gBtn:"Download SautiPlus AI", meta:(v,mb)=>`Version ${v} · Android · ${mb} MB`,
     i1:"Download the file", i1p:"Tap the button. The SautiPlus-AI.apk file is saved to your phone.",
     i2:"Open it and allow the install", i2p:"If your phone asks, allow \"Install unknown apps\" for your browser, then tap Install.",
@@ -521,7 +528,8 @@ const T = {
     fTitle:"Common questions",
     faq:[
       ["Is SautiPlus AI free?","Starting is free. You get a trial balance and four test scripts that don't use your balance. When you need more minutes, you buy a package."],
-      ["Does it work on iPhone?","For now the app is for Android phones only."],
+      ["Does it work on iPhone or a computer?","Yes. The downloadable app is for Android, but you can use SautiPlus on an iPhone, a computer or any phone in the browser: tap Log in at the top of this page. Your account, balance and voices are the same."],
+      ["Do I have to download the app?","No. You can create an account and make voice overs right on this website without downloading anything. If you like, you can use the app and the website with one account."],
       ["How do I pay?","Inside the app you choose a package and pay with M-Pesa, Mixx by Yas, Airtel Money or HaloPesa. Your balance is added once your payment is confirmed."],
       ["Why does my phone warn me when I install?","Android shows a warning for every app that doesn't come from the Play Store. Download SautiPlus only from this page so you know you have the right file."],
       ["How do I get updates?","The app updates itself each time you open it with internet. On the rare occasion a completely new version is needed, the app shows you a button to download it."],
@@ -529,7 +537,7 @@ const T = {
     ],
     foot:"Made in Tanzania.",
     chatFab:"Help", chatTitle:"SautiPlus support", chatSub:"AI assistant, replies instantly", chatPh:"Type your question…", chatSend:"Send", chatClose:"Close", chatWait:"Typing…",
-    chatHello:"Hi! I'm the SautiPlus AI assistant. Ask me anything about voices, packages, payments or how to install the app.",
+    chatHello:"Hi! I'm the SautiPlus AI assistant. Ask me anything about voices, packages, payments or how to get started.",
     chatFail:"Sorry, I couldn't answer just now. Check your internet and try again.", chatSlow:"You've sent many questions in a short time. Wait a minute and try again.",
   },
 };
