@@ -271,6 +271,24 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 .admin-link:hover{background:var(--surface)}
 .toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:40;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+/* Drag the wave to move through a voice over; the logo above it dances while it plays */
+.wave{cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.wave.seek i{transition:none}
+.a.playing .mark rect{transform-box:fill-box;transform-origin:center;animation:wave 1.3s ease-in-out infinite}
+.a.playing .mark rect:nth-child(1){animation-delay:-.75s}.a.playing .mark rect:nth-child(2){animation-delay:-.6s}.a.playing .mark rect:nth-child(3){animation-delay:-.45s}
+.a.playing .mark rect:nth-child(4){animation-delay:-.3s}.a.playing .mark rect:nth-child(5){animation-delay:-.15s}
+@media (prefers-reduced-motion:reduce){.a.playing .mark rect{animation:none}}
+.a-head .mark{flex:none}
+/* Copy button under the user's script */
+.u-wrap{align-self:flex-end;max-width:85%;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.u-wrap .u{max-width:100%}
+/* History rows with a delete button */
+.hrow{display:flex;align-items:center;border-radius:var(--r-sm)}
+.hrow:hover,.hrow.cur{background:var(--surface)}
+.hrow>button:first-child{flex:1;min-width:0;background:none!important}
+.hist .hdel{width:34px;height:34px;padding:0;flex:none;display:grid;place-items:center;border-radius:50%;color:var(--muted)}
+.hist .hdel:hover{color:var(--warn)}
+.label.sp{display:flex;align-items:center;justify-content:space-between}
 @media (max-width:420px){.ideas{grid-template-columns:1fr}.idea:nth-child(n+3){display:none}}
 </style>
 </head>
@@ -519,7 +537,7 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 const CONFIG = { API: "https://zvsphyuxyidxarimngbr.supabase.co/functions/v1/api", CHARS_PER_SEC: 15, TRIAL_SECONDS: 10, REFRESH_EVERY_MS: 120000 };
 const NATIVE = !!window.Capacitor?.isNativePlatform?.(); // true inside the Android app
 // Version of these screens. Raise it before every `npm run publish`: phones download the new screens when it is higher than theirs.
-const WEB_VERSION = "1.5.0";
+const WEB_VERSION = "1.6.0";
 // The SautiPlus website. It also holds app/version.json, which tells the app about updates.
 const SITE = "https://alikaapp.github.io/sautiplus";
 
@@ -684,6 +702,14 @@ const T = {
     payRequested:p=>`Ombi lako la kifurushi cha ${p} limepokelewa. Tutawasiliana nawe kupitia simu yako kukamilisha malipo. Dakika zitaongezwa mara malipo yatakapothibitishwa.`,
     payPending:p=>`Ombi lako la kifurushi cha ${p} linasubiri uthibitisho wa malipo.`,
     paidOk:"Malipo yamethibitishwa. Dakika zimeongezwa!",
+    delChat:"Futa mazungumzo haya", delChatAsk:n=>`Futa mazungumzo "${n}" pamoja na sauti zake zote? Haiwezi kurudishwa.`,
+    copyScript:"Nakili mswada", seek:"Sogeza sauti",
+    autoWait:"AI inachagua hisia…", autoFail:"Hisia za AI hazikupatikana sasa hivi. Zimewekwa kwa kanuni rahisi.",
+    communityVoices:"Sauti za jamii", communityDesc:"Sauti iliyoshirikiwa na mtumiaji",
+    shareVoice:"Shiriki sauti hii na wote", shareAsk:n=>`Tuma ombi la kuchapisha sauti "${n}" ili watumiaji wote waitumie? Timu ya SautiPlus itakagua kwanza.`,
+    shareStopAsk:n=>`Acha kushiriki sauti "${n}"?`, shareSent:"Ombi limetumwa. Timu itakagua sauti yako.", shareStopped:"Sauti haishirikiwi tena",
+    sharePending:"Inasubiri idhini", sharePublic:"Imechapishwa kwa wote", shareRejected:"Ombi limekataliwa",
+    priceNote:c=>`Bei zimebadilishwa kuwa ${c} kwa makadirio. Malipo hufanyika kwa shilingi za Tanzania (TSh).`,
   },
   en: {
     openMenu:"Open menu", chooseVoice:"Choose a voice", newVO:"New voice over", menu:"Menu", close:"Close",
@@ -781,6 +807,14 @@ const T = {
     payRequested:p=>`We received your request for the ${p} package. We will contact you on your phone to complete the payment. Your minutes are added as soon as the payment is confirmed.`,
     payPending:p=>`Your request for the ${p} package is waiting for payment confirmation.`,
     paidOk:"Payment confirmed. Your minutes have been added!",
+    delChat:"Delete this conversation", delChatAsk:n=>`Delete the conversation "${n}" and all its voice overs? It can't be brought back.`,
+    copyScript:"Copy script", seek:"Move through the voice over",
+    autoWait:"AI is choosing expressions…", autoFail:"AI expressions are not available right now. Simple rules were used instead.",
+    communityVoices:"Community voices", communityDesc:"Voice shared by a user",
+    shareVoice:"Share this voice with everyone", shareAsk:n=>`Send a request to publish the voice "${n}" so all users can use it? The SautiPlus team will review it first.`,
+    shareStopAsk:n=>`Stop sharing the voice "${n}"?`, shareSent:"Request sent. The team will review your voice.", shareStopped:"The voice is no longer shared",
+    sharePending:"Waiting for approval", sharePublic:"Public for everyone", shareRejected:"Request rejected",
+    priceNote:c=>`Prices are shown in ${c} as an estimate. Payment is made in Tanzanian shillings (TSh).`,
   },
 };
 const t = (k, ...a) => { const v = T[S.lang]?.[k] ?? T.sw[k]; return typeof v === "function" ? v(...a) : v; };
@@ -800,10 +834,11 @@ const store = {
   set(v){ try{ localStorage.setItem("sautiplus", JSON.stringify(v)); }catch(e){} }
 };
 const saved = store.get();
-let S = Object.assign({ balance: CONFIG.TRIAL_SECONDS, total: CONFIG.TRIAL_SECONDS, planId:"trial", voice:"baraka", expr:"neutral", voiceFilter:"sw", lang:"sw", unlimited:false, clones:[], user:null, notifSeen:0, freeTests:[], pendingPlan:null, chats: [], cur: null }, saved);
+let S = Object.assign({ balance: CONFIG.TRIAL_SECONDS, total: CONFIG.TRIAL_SECONDS, planId:"trial", voice:"baraka", expr:"neutral", voiceFilter:"sw", lang:"sw", unlimited:false, clones:[], user:null, notifSeen:0, freeTests:[], pendingPlan:null, chats: [], cur: null, publicVoices:[], synced:{}, upl:{}, delQ:[], langChosen:false, owner:null }, saved);
 if(saved && saved.plan && !saved.planId){ S.planId = (PLANS.find(p=>p.name===saved.plan)||{id:"trial"}).id; } // older saved format
 delete S.plan;
-const save = () => store.set({ ...S, chats: S.chats.map(c=>({...c, msgs:c.msgs.map(m=>({...m, url:null}))})) });
+const persist = () => store.set({ ...S, chats: S.chats.map(c=>({...c, msgs:c.msgs.map(m=>({...m, url:null}))})) });
+const save = () => { persist(); schedulePush(); };
 const audioCache = {}; // id -> blob URL for this session
 // Generated audio is kept on the phone (IndexedDB) so old voice overs still play after the app is closed.
 const audioStore = (()=>{
@@ -812,14 +847,117 @@ const audioStore = (()=>{
   const tx = async (mode, fn) => { const db=await open(); return new Promise((res, rej)=>{ const t=db.transaction("a",mode), rq=fn(t.objectStore("a")); t.oncomplete=()=>res(rq.result); t.onerror=()=>rej(t.error); }); };
   return { put:(id,blob)=>tx("readwrite",st=>st.put(blob,id)).catch(()=>{}), get:id=>tx("readonly",st=>st.get(id)).catch(()=>null), del:id=>tx("readwrite",st=>st.delete(id)).catch(()=>{}), clear:()=>tx("readwrite",st=>st.clear()).catch(()=>{}) };
 })();
+// On this device first; otherwise the copy kept on the server (so voice overs made on another device play here too).
 async function audioUrl(m){
   if(!audioCache[m.id]){ const b=await audioStore.get(m.id); if(b) audioCache[m.id]=URL.createObjectURL(b); }
+  if(!audioCache[m.id] && S.user?.token){
+    try{ const r = await api("/audio/"+m.id); if(r.ok){ const b = await r.blob(); audioStore.put(m.id, b); audioCache[m.id]=URL.createObjectURL(b); S.upl[m.id]=1; } }catch(e){}
+  }
   return audioCache[m.id] || null;
+}
+
+/* ---------- conversations kept on the server ----------
+   Every conversation (and the MP3 of each voice over) is copied to the user's account, so the history is the same
+   in the phone app and in the browser. S.synced[id] = what the server has; S.delQ = deletions still to send. */
+const chatSig = c => JSON.stringify([c.title, c.msgs.filter(m=>m.status!=="gen").map(m=>m.role==="user" ? [m.text] : [m.id, m.voice, m.expr, m.text, m.sec])]);
+let pushTimer = null, backfilling = false;
+function schedulePush(){ if(!S.user?.token) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushChats, 1500); }
+async function pushChats(){
+  if(!S.user?.token) return;
+  for(const c of S.chats){
+    const sig = chatSig(c);
+    if(S.synced[c.id]===sig || !c.msgs.some(m=>m.status!=="gen")) continue;
+    try{
+      const r = await api("/chats/"+c.id, { title:c.title, msgs:c.msgs.filter(m=>m.status!=="gen") }, "PUT");
+      if(r.status===401) return;
+      if(r.ok){ S.synced[c.id] = sig; persist(); }
+    }catch(e){ return; }
+  }
+}
+async function uploadAudio(id, blob){
+  if(!S.user?.token) return;
+  try{ const r = await fetch(CONFIG.API+"/audio/"+id, { method:"POST", headers:{ Authorization:"Bearer "+S.user.token, "Content-Type":"audio/mpeg" }, body:blob }); if(r.ok){ S.upl[id]=1; persist(); } }catch(e){}
+}
+// Voice overs made before history sync existed are copied to the server once.
+async function backfillAudio(){
+  if(backfilling || !S.user?.token) return;
+  backfilling = true;
+  try{
+    for(const c of S.chats) for(const m of c.msgs){
+      if(m.role!=="voice" || m.status!=="ready" || S.upl[m.id]) continue;
+      const b = await audioStore.get(m.id);
+      if(b) await uploadAudio(m.id, b); else S.upl[m.id] = 1; // nothing on this device: it came from the server
+    }
+    persist();
+  }catch(e){}
+  backfilling = false;
+}
+async function flushDeletes(){
+  for(const id of [...S.delQ]){
+    try{ const r = await api("/chats/"+id, undefined, "DELETE"); if(r.ok || r.status===404) S.delQ = S.delQ.filter(x=>x!==id); }catch(e){ return; }
+  }
+  persist();
+}
+async function pullChats(){
+  if(!S.user?.token || document.querySelector(".a.gen")) return;
+  try{
+    await flushDeletes();
+    const r = await api("/chats"); if(!r.ok) return;
+    const list = await r.json(), ids = new Set(list.map(x=>x.id));
+    let changed = false;
+    for(const sc of list){
+      if(S.delQ.includes(sc.id)) continue;
+      const local = S.chats.find(c=>c.id===sc.id), copy = { id:sc.id, title:sc.title, msgs:sc.msgs };
+      if(local && S.synced[sc.id]!==chatSig(local)) continue; // changed on this device and not uploaded yet: keep it
+      if(local && chatSig(local)===chatSig(copy)){ S.synced[sc.id] = chatSig(copy); continue; }
+      if(local) S.chats[S.chats.indexOf(local)] = copy; else S.chats.push(copy);
+      S.synced[sc.id] = chatSig(copy); changed = true;
+    }
+    const before = S.chats.length;
+    S.chats = S.chats.filter(c=>ids.has(c.id) || !S.synced[c.id]); // deleted on another device
+    if(S.chats.length!==before) changed = true;
+    if(S.cur && !curChat()) S.cur = null;
+    persist();
+    if(changed) renderAll();
+    pushChats(); backfillAudio();
+  }catch(e){}
 }
 
 const $ = id => document.getElementById(id);
 const fmt = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
 const tsh = n => n.toLocaleString("en-US")+" TSh";
+
+/* ---------- prices in the user's own currency ----------
+   The country comes from the phone number the account was made with. Prices are only converted for display
+   (payment is still in TSh). Rates come from a free public rate service, refreshed daily; the table below is the fallback. */
+const CUR_BY_DIAL = Object.fromEntries(("254:KES 256:UGX 250:RWF 257:BIF 243:CDF 27:ZAR 234:NGN 233:GHS 260:ZMW 265:MWK 258:MZN 251:ETB 20:EGP 212:MAD 216:TND 213:DZD 1:USD 44:GBP 91:INR 971:AED 966:SAR 974:QAR 86:CNY 81:JPY 82:KRW 61:AUD 64:NZD 7:RUB 55:BRL 52:MXN 90:TRY 92:PKR 880:BDT 62:IDR 60:MYR 65:SGD 63:PHP 41:CHF 46:SEK 47:NOK 45:DKK 48:PLN "
+  + "33:EUR 49:EUR 39:EUR 34:EUR 31:EUR 32:EUR 43:EUR 351:EUR 353:EUR 358:EUR 30:EUR 352:EUR 356:EUR 357:EUR 371:EUR 370:EUR 372:EUR 386:EUR 421:EUR 385:EUR").split(" ").map(x=>x.split(":")));
+const RATES_FALLBACK = { TZS:2700, USD:1, KES:129, UGX:3650, RWF:1400, BIF:2900, CDF:2800, ZAR:18, NGN:1500, GHS:15, ZMW:26, MWK:1750, MZN:64, ETB:130, EGP:49, MAD:9.8, TND:3.1, DZD:134, GBP:.79, INR:84, AED:3.67, SAR:3.75, QAR:3.64, CNY:7.2, JPY:150, KRW:1350, AUD:1.5, NZD:1.65, RUB:92, BRL:5.5, MXN:19, TRY:34, PKR:280, BDT:120, IDR:15500, MYR:4.4, SGD:1.33, PHP:57, CHF:.88, SEK:10.5, NOK:10.7, DKK:6.9, PLN:4, EUR:.92 }; // units per 1 US dollar
+let RATES = RATES_FALLBACK;
+try{ const c = JSON.parse(localStorage.getItem("sautiplus-rates")||"null"); if(c?.rates?.TZS) RATES = c.rates; }catch(e){}
+async function loadRates(){
+  try{
+    const c = JSON.parse(localStorage.getItem("sautiplus-rates")||"null");
+    if(c && Date.now()-c.at < 86400000) return;
+    const j = await (await fetch("https://open.er-api.com/v6/latest/USD")).json();
+    if(j?.rates?.TZS){ RATES = j.rates; localStorage.setItem("sautiplus-rates", JSON.stringify({ at:Date.now(), rates:j.rates })); }
+  }catch(e){}
+}
+function userCurrency(){
+  const d = String(S.user?.phone||"").replace(/\D/g,"");
+  if(!d || d.startsWith("255")) return "TZS";
+  for(let k=3;k>=1;k--) if(CUR_BY_DIAL[d.slice(0,k)]) return CUR_BY_DIAL[d.slice(0,k)];
+  return "USD";
+}
+// "≈ KES 1,290" for a Kenyan number, "10,000 TSh" for a Tanzanian one
+function money(tzs){
+  const cur = userCurrency();
+  if(cur==="TZS" || !RATES[cur] || !RATES.TZS) return tsh(tzs);
+  const v = tzs / RATES.TZS * RATES[cur];
+  try{ return "≈ " + new Intl.NumberFormat(S.lang==="sw" ? "sw-TZ" : "en", { style:"currency", currency:cur, maximumFractionDigits: v>=100 ? 0 : 2 }).format(v); }
+  catch(e){ return "≈ " + Math.round(v).toLocaleString("en-US") + " " + cur; }
+}
+const priceNote = () => userCurrency()==="TZS" ? "" : `<p class="demo-flag">${esc(t("priceNote", userCurrency()))}</p>`;
 const TAG_RE = /\[[^\]\n]{1,30}\]\s*/g;
 const stripTags = s => s.replace(TAG_RE, "");
 const hasTags = s => /\[[^\]\n]{1,30}\]/.test(s);
@@ -828,6 +966,8 @@ const estSec = t => Math.max(1, Math.ceil(stripTags(t).trim().length / CONFIG.CH
 const voiceOf = id => {
   const c = (S.clones || []).find(c=>"clone:"+c.id===id);
   if(c) return { id, name:c.name, clone:true };
+  const pv = (S.publicVoices || []).find(v=>"public:"+v.id===id); // a voice another user shared with everyone
+  if(pv) return { id, name:pv.name, clone:true };
   return VOICES.find(v=>v.id===(OLD_VOICES[id]||id)) || VOICES.find(v=>v.id==="baraka");
 };
 S.voice = voiceOf(S.voice).id;
@@ -839,10 +979,10 @@ function toast(msg){ const el=$("toast"); el.textContent=msg; el.classList.add("
 
 /* ---------- server ---------- */
 // Calls the online server with the user's login token.
-function api(path, body){
+function api(path, body, method){
   const headers = { "Content-Type":"application/json" };
   if(S.user?.token) headers.Authorization = "Bearer " + S.user.token;
-  return fetch(CONFIG.API + path, body === undefined ? { headers } : { method:"POST", headers, body:JSON.stringify(body) });
+  return fetch(CONFIG.API + path, body === undefined && !method ? { headers } : { method:method || "POST", headers, body: body === undefined ? undefined : JSON.stringify(body) });
 }
 const track = (path, body) => api(path, body).catch(()=>{});
 
@@ -860,7 +1000,12 @@ function setLang(l){
   S.lang=l; save(); applyLang(); renderIdeas(); renderAll();
   if(S.user && S.user.lang!==l){ S.user.lang=l; save(); track("/profile", { lang:l }); }
 }
-document.querySelectorAll("[data-langs]").forEach(g=>g.addEventListener("click", e=>{ const b=e.target.closest("[data-lang]"); if(b) setLang(b.dataset.lang); }));
+document.querySelectorAll("[data-langs]").forEach(g=>g.addEventListener("click", e=>{ const b=e.target.closest("[data-lang]"); if(b){ S.langChosen=true; save(); setLang(b.dataset.lang); } })); // once the user picks a language, it is never changed for them
+// Accounts made with a phone number from outside Tanzania start in English (until the user picks a language themselves).
+function autoLang(){
+  const p = S.user?.phone;
+  if(p && !p.startsWith("+255") && !S.langChosen && S.lang!=="en") setLang("en");
+}
 
 /* ---------- rendering ---------- */
 function renderIdeas(){
@@ -879,7 +1024,8 @@ function renderMsgs(){
   $("empty").hidden = !!has; $("msgs").hidden = !has;
   if(!has){ $("msgs").innerHTML=""; return; }
   $("msgs").innerHTML = c.msgs.map((m,i) => m.role==="user"
-    ? `<div class="u" data-i="${i}">${esc(m.text).replace(/\[([^\]\n]{1,30})\]/g,'<span class="tg">[$1]</span>')}</div>`
+    ? `<div class="u-wrap"><div class="u" data-i="${i}">${esc(m.text).replace(/\[([^\]\n]{1,30})\]/g,'<span class="tg">[$1]</span>')}</div>
+        <button class="act" data-copy="${i}" aria-label="${t("copyScript")}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>${t("copy")}</button></div>`
     : voiceCard(m)).join("");
   $("scroll").scrollTop = $("scroll").scrollHeight;
 }
@@ -894,20 +1040,20 @@ function voiceCard(m){
     <div class="a-head"><svg class="mark" viewBox="0 0 64 64">${markSVG()}</svg>${v.name}${exprLabel(m)}</div>
     <div class="card">
       <button class="play" data-act="play" aria-label="Play"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
-      <div class="wave" data-wave>${waveBars(m.id+m.text)}</div>
+      <div class="wave" data-wave role="slider" tabindex="0" aria-label="${t("seek")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">${waveBars(m.id+m.text)}</div>
       <span class="dur" data-dur>${fmt(m.sec)}</span>
     </div>
     <div class="actions">
       <button class="act" data-act="dl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>${t(NATIVE ? "share" : "download")}</button>
       <button class="act" data-act="redo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>${t("redo")} · ${fmt(m.sec)}</button>
-      <button class="act" data-act="copy"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>${t("copy")}</button>
     </div>
   </div>`;
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function renderHist(){
   const list = [...S.chats].reverse();
-  $("hist").innerHTML = list.length ? list.map(c=>`<button data-id="${c.id}" class="${c.id===S.cur?"cur":""}">${esc(c.title)}</button>`).join("") : `<div class="none">${t("histEmpty")}</div>`;
+  $("hist").innerHTML = list.length ? list.map(c=>`<div class="hrow ${c.id===S.cur?"cur":""}"><button data-id="${c.id}">${esc(c.title)}</button>
+    <button class="hdel" data-del="${c.id}" aria-label="${t("delChat")}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`).join("") : `<div class="none">${t("histEmpty")}</div>`;
 }
 // S.unlimited = full access: the owner, and people the owner added in the admin panel. Nothing is taken from their balance.
 function renderBal(){
@@ -966,7 +1112,7 @@ async function generate(text, voice, expr, isNew){
     const r = await api("/tts", { voiceKey:voice, text, expression:exprOf(expr).tag, lang:S.voiceFilter }); // lang = which language a cloned voice should read in
     if(r.ok){
       const blob = await r.blob();
-      audioCache[m.id] = URL.createObjectURL(blob); audioStore.put(m.id, blob);
+      audioCache[m.id] = URL.createObjectURL(blob); audioStore.put(m.id, blob); uploadAudio(m.id, blob); // also kept on the server, for the user's other devices
       if(r.headers.get("x-balance") !== null){ S.balance = +r.headers.get("x-balance"); S.total = +r.headers.get("x-total") || S.total; }
       try{ S.freeTests = JSON.parse(r.headers.get("x-free-tests")) || S.freeTests; }catch(e){}
       m.status="ready";
@@ -1009,39 +1155,103 @@ function autoTag(text){
     return s.match(/^\s*/)[0] + `[${pickTag(body, fallback)}] ` + body;
   });
 }
-$("autoBtn").onclick = ()=>{
-  if(!stripTags(input.value).trim()) return;
-  input.value = autoTag(input.value); onInput(); input.focus();
-  toast(t("autoDone"));
+// The AI (Gemini, on the server) reads the whole script and picks an expression for every sentence.
+// If it cannot be reached, the simple keyword rules above are used instead.
+const SENTENCE_RE = /[^.!?…\n]+[.!?…]*/g;
+$("autoBtn").onclick = async ()=>{
+  const plain = stripTags(input.value).trim();
+  if(!plain) return;
+  const btn = $("autoBtn"); btn.disabled = true; toast(t("autoWait"));
+  const parts = plain.match(SENTENCE_RE).map(s=>s.trim());
+  let tags = null;
+  try{
+    const r = await api("/expressions", { sentences:parts, lang:S.lang });
+    if(r.status===401){ btn.disabled = false; return sessionEnded(); }
+    if(r.ok) tags = (await r.json()).tags;
+  }catch(e){}
+  if(Array.isArray(tags) && tags.length===parts.length){
+    let i = 0;
+    input.value = plain.replace(SENTENCE_RE, s=>{
+      const tag = tags[i++], body = s.trim();
+      return body ? s.match(/^\s*/)[0] + (tag && tag!=="neutral" ? `[${tag}] ` : "") + body : s;
+    });
+    toast(t("autoDone"));
+  } else { input.value = autoTag(input.value); toast(t("autoFail")); }
+  onInput(); input.focus();
 };
 
 /* ---------- playback ---------- */
 let playing = null; // {id, el, audio, timer}
+const playEl = p => p.el.isConnected ? p.el : (p.el = document.querySelector(`.a[data-id="${p.id}"]`) || p.el); // the list is redrawn now and then: find the card again
 function stopPlay(){
   if(!playing) return;
   if(playing.audio) playing.audio.pause();
   clearInterval(playing.timer);
-  const el=playing.el; if(el && el.isConnected){ el.querySelector("[data-act=play]").innerHTML=PLAY; el.querySelectorAll("[data-wave] i").forEach(i=>i.classList.remove("on")); }
+  const el=playEl(playing); if(el && el.isConnected){ el.classList.remove("playing"); el.querySelector("[data-act=play]").innerHTML=PLAY; el.querySelectorAll("[data-wave] i").forEach(i=>i.classList.remove("on")); el.querySelector("[data-dur]").textContent=fmt(playing.sec); el.querySelector("[data-wave]").setAttribute("aria-valuenow",0); }
   playing=null;
 }
+// Draws the progress of the voice over that is playing: the bars, the time left, the pause button and the dancing logo.
+function paintPlay(){
+  const p=playing; if(!p) return;
+  const el=playEl(p); if(!el.isConnected) return;
+  const a=p.audio, dur=dur_(a,p.sec), bars=el.querySelectorAll("[data-wave] i"), k=Math.floor(Math.min(1,a.currentTime/dur)*bars.length);
+  bars.forEach((b,i)=>b.classList.toggle("on",i<k));
+  el.querySelector("[data-dur]").textContent=fmt(dur-a.currentTime);
+  el.querySelector("[data-wave]").setAttribute("aria-valuenow", Math.round(a.currentTime/dur*100));
+  const btn=el.querySelector("[data-act=play]"), state=a.paused?"play":"pause";
+  if(btn.dataset.s!==state){ btn.dataset.s=state; btn.innerHTML=a.paused?PLAY:PAUSE; }
+  el.classList.toggle("playing", !a.paused); // the SautiPlus logo above the voice over moves only while the sound is playing
+}
+const dur_ = (a,fallback) => isFinite(a.duration) && a.duration>0 ? a.duration : fallback;
 const PLAY = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>`;
 const PAUSE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`;
-async function play(el, m){
-  if(playing && playing.id===m.id){ stopPlay(); return; }
+// from = where to start, 0 to 1 (when the user dragged or tapped the wave of a voice over that was not playing)
+let playTok = 0; // newest request wins, so dragging on a voice over that is still loading does not start it twice
+async function play(el, m, from){
+  if(from===undefined && playing && playing.id===m.id){ stopPlay(); return; }
   stopPlay(); stopSample();
+  const tok = ++playTok;
   const url = await audioUrl(m);
+  if(tok!==playTok) return;
   if(!url){ toast(t("noAudio")); return; }
-  const bars=[...el.querySelectorAll("[data-wave] i")], a=new Audio(url);
-  playing={ id:m.id, el, audio:a };
-  el.querySelector("[data-act=play]").innerHTML=PAUSE;
+  const a=new Audio(url);
+  playing={ id:m.id, el, audio:a, sec:m.sec };
+  if(from) a.addEventListener("loadedmetadata", ()=>{ a.currentTime = from * dur_(a, m.sec); }, { once:true });
   const done=()=>{ if(playing&&playing.id===m.id) stopPlay(); };
   a.onended=done; a.play().catch(done);
-  playing.timer=setInterval(()=>{
-    const dur=a.duration||m.sec, p=Math.min(1,a.currentTime/dur), k=Math.floor(p*bars.length);
-    bars.forEach((b,i)=>b.classList.toggle("on",i<k));
-    el.querySelector("[data-dur]").textContent=fmt(dur-a.currentTime);
-  },100);
+  paintPlay();
+  playing.timer=setInterval(paintPlay,100);
 }
+// Moving through the voice over: tap or drag on the wave, or use the left and right arrow keys.
+function seekTo(el, m, ratio){
+  ratio = Math.min(1, Math.max(0, ratio));
+  if(!playing || playing.id!==m.id){ play(el, m, ratio); return; }
+  const a=playing.audio;
+  a.currentTime = ratio * dur_(a, m.sec);
+  if(a.paused) a.play().catch(()=>{});
+  paintPlay();
+}
+(()=>{
+  const box=$("msgs"); let drag=null;
+  const msgOf = el => curChat()?.msgs.find(x=>x.id===el.dataset.id);
+  const ratio = (wave,e) => { const r=wave.getBoundingClientRect(); return (e.clientX-r.left)/r.width; };
+  box.addEventListener("pointerdown", e=>{
+    const wave=e.target.closest("[data-wave]"); if(!wave || e.button>0) return;
+    const el=wave.closest(".a"), m=msgOf(el); if(!m) return;
+    drag={ wave, el, m, id:e.pointerId };
+    try{ wave.setPointerCapture(e.pointerId); }catch(err){}
+    seekTo(el, m, ratio(wave,e));
+  });
+  box.addEventListener("pointermove", e=>{ if(drag && e.pointerId===drag.id) seekTo(drag.el, drag.m, ratio(drag.wave,e)); });
+  ["pointerup","pointercancel","lostpointercapture"].forEach(n=>box.addEventListener(n, e=>{ if(drag && e.pointerId===drag.id) drag=null; }));
+  box.addEventListener("keydown", e=>{
+    const wave=e.target.closest("[data-wave]"); if(!wave || !["ArrowLeft","ArrowRight"].includes(e.key)) return;
+    const el=wave.closest(".a"), m=msgOf(el); if(!m) return;
+    e.preventDefault();
+    const a = playing && playing.id===m.id ? playing.audio : null, d = a ? dur_(a, m.sec) : m.sec;
+    seekTo(el, m, ((a ? a.currentTime : 0) + (e.key==="ArrowRight" ? 5 : -5)) / d);
+  });
+})();
 // Voice samples are small MP3 files that ship with the app (samples/<voice>.mp3).
 let sample = null; // {id, audio}
 const MINI_PLAY = PLAY.replace('width="18" height="18"','width="14" height="14"');
@@ -1085,13 +1295,22 @@ async function saveAudio(m){
   }
   const a=document.createElement("a"); a.href=url; a.download=name; a.click();
 }
+// Copies text. Falls back to a hidden text box where the clipboard API is not allowed (older WebViews, plain http).
+async function copyText(s){
+  try{ await navigator.clipboard.writeText(s); toast(t("copied")); return; }catch(e){}
+  try{
+    const ta=document.createElement("textarea"); ta.value=s; ta.style.cssText="position:fixed;opacity:0"; document.body.appendChild(ta); ta.select();
+    const ok=document.execCommand("copy"); ta.remove(); toast(t(ok ? "copied" : "copyFail"));
+  }catch(e){ toast(t("copyFail")); }
+}
 $("msgs").addEventListener("click", e=>{
+  const cp=e.target.closest("[data-copy]");
+  if(cp){ const m=curChat()?.msgs[+cp.dataset.copy]; if(m) copyText(m.text); return; }
   const b=e.target.closest("[data-act]"); if(!b) return;
   const el=b.closest(".a"); const m=curChat().msgs.find(x=>x.id===el.dataset.id); if(!m) return;
   const act=b.dataset.act;
   if(act==="play") play(el,m);
   if(act==="redo") generate(m.text, S.voice, S.expr, false);
-  if(act==="copy"){ navigator.clipboard?.writeText(m.text).then(()=>toast(t("copied")),()=>toast(t("copyFail"))); }
   if(act==="dl") saveAudio(m);
 });
 
@@ -1116,13 +1335,16 @@ $("delGo").onclick = ()=>{
     audioStore.del(m.id);
   }
   c.msgs.splice(delIndex, 1);
-  if(!c.msgs.length){ S.chats = S.chats.filter(x=>x!==c); S.cur = null; } // an empty conversation is removed from the history
+  if(!c.msgs.length){ // an empty conversation is removed from the history
+    S.chats = S.chats.filter(x=>x!==c); S.cur = null;
+    if(S.user?.token && S.synced[c.id]){ S.delQ.push(c.id); delete S.synced[c.id]; flushDeletes(); }
+  }
   save(); renderAll(); toast(t("deleted"));
 };
 (()=>{
   const box = $("msgs"), HOLD = 550;
   let timer = null, x0 = 0, y0 = 0, held = false, heldAt = 0;
-  const item = e => e.target.closest(".u, .a[data-id]");
+  const item = e => e.target.closest("[data-wave]") ? null : e.target.closest(".u, .a[data-id]"); // holding the wave is for moving through the audio, not deleting
   const cancel = ()=>{ clearTimeout(timer); timer = null; };
   box.addEventListener("pointerdown", e=>{
     const el = item(e); held = false; cancel();
@@ -1149,9 +1371,27 @@ document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeAll);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeAll(); });
 function newChat(){ stopPlay(); S.cur=null; save(); closeAll(); renderAll(); input.focus(); }
 $("newTop").onclick=newChat; $("newDrawer").onclick=newChat;
-$("hist").onclick=e=>{ const b=e.target.closest("button[data-id]"); if(!b) return; stopPlay(); S.cur=b.dataset.id; save(); closeAll(); renderAll(); };
+$("hist").onclick=e=>{
+  const d=e.target.closest("[data-del]"); if(d){ deleteChat(d.dataset.del); return; }
+  const b=e.target.closest("button[data-id]"); if(!b) return; stopPlay(); S.cur=b.dataset.id; save(); closeAll(); renderAll();
+};
+// Deletes a whole conversation from the menu: here, on the server and on the user's other devices.
+function deleteChat(id){
+  const c = S.chats.find(x=>x.id===id); if(!c) return;
+  if(!confirm(t("delChatAsk", c.title))) return;
+  stopPlay();
+  for(const m of c.msgs) if(m.role==="voice"){
+    if(audioCache[m.id]){ URL.revokeObjectURL(audioCache[m.id]); delete audioCache[m.id]; }
+    audioStore.del(m.id); delete S.upl[m.id];
+  }
+  S.chats = S.chats.filter(x=>x!==c);
+  if(S.cur===id) S.cur = null;
+  if(S.user?.token && S.synced[id]){ S.delQ.push(id); delete S.synced[id]; }
+  persist(); renderAll(); toast(t("deleted"));
+  flushDeletes();
+}
 $("buyBtn").onclick=()=>{ closeAll(); openPlans(); };
-$("logoutBtn").onclick=()=>{ stopPlay(); S.user=null; S.unlimited=false; S.clones=[]; S.voice=voiceOf(S.voice).id; S.chats=[]; S.cur=null; S.notifSeen=0; S.pendingPlan=null; NOTIFS=[]; renderBell(); save(); audioStore.clear(); closeAll(); renderAll(); showAuth("login"); };
+$("logoutBtn").onclick=()=>{ stopPlay(); S.user=null; S.unlimited=false; S.clones=[]; S.voice=voiceOf(S.voice).id; S.chats=[]; S.cur=null; S.synced={}; S.upl={}; S.delQ=[]; S.owner=null; S.publicVoices=[]; S.notifSeen=0; S.pendingPlan=null; NOTIFS=[]; renderBell(); save(); audioStore.clear(); closeAll(); renderAll(); showAuth("login"); };
 
 /* ---------- pull down to refresh ----------
    Dragging the conversation down from the top reloads the app: fresh balance, notifications and any new version.
@@ -1298,10 +1538,22 @@ $("recSend").onclick = async ()=>{
       recUI("ready", rec.secs); return;
     }
     const c = await r.json();
-    S.clones.push({ id:c.id, name:c.name }); S.voice = "clone:"+c.id; save();
+    S.clones.push({ id:c.id, name:c.name, share:"none" }); S.voice = "clone:"+c.id; save();
     closeAll(); renderVoice(); toast(t("cloneDone", c.name));
   }catch(e){ $("recErr").textContent = t("e_offline"); recUI("ready", rec ? rec.secs : 0); }
 };
+// Asks to share one of my cloned voices with everybody (the SautiPlus team approves it first), or stops sharing it.
+async function shareClone(id, name, cur){
+  const stop = cur==="pending" || cur==="published";
+  if(!confirm(t(stop ? "shareStopAsk" : "shareAsk", name))) return;
+  try{
+    const r = await api("/clones/"+id+"/share", { share:!stop });
+    if(r.status===401) return sessionEnded();
+    if(!r.ok) throw 0;
+    const c = S.clones.find(x=>x.id===id); if(c) c.share = (await r.json()).share;
+    save(); openVoices(); toast(t(stop ? "shareStopped" : "shareSent"));
+  }catch(e){ toast(t("e_offline")); }
+}
 async function deleteClone(id, name){
   if(!confirm(t("cloneDeleteAsk", name))) return;
   try{
@@ -1339,6 +1591,7 @@ $("chatForm").onsubmit = async e=>{
 const cloneSlots = ()=> S.unlimited ? 15 : (planOf(S.planId)?.clones || 0); // full access = the biggest package
 function openVoices(){
   const clones = cloneSlots();
+  const pubs = (S.publicVoices || []).filter(v=>!S.clones.some(c=>c.id===v.id)); // voices other users shared (mine are listed above)
   stopSample();
   $("voiceList").innerHTML =
     `<div class="seg full" role="group"><button data-vf="sw" class="${S.voiceFilter==="sw"?"on":""}" aria-pressed="${S.voiceFilter==="sw"}">Kiswahili</button><button data-vf="en" class="${S.voiceFilter==="en"?"on":""}" aria-pressed="${S.voiceFilter==="en"}">English</button></div>` +
@@ -1350,8 +1603,13 @@ function openVoices(){
     </div>`).join("") +
     (S.clones.length ? `<div class="label">${t("myVoices")}</div>` + S.clones.map(c=>`<div class="voice ${"clone:"+c.id===S.voice?"sel":""}" role="button" tabindex="0" data-id="clone:${c.id}">
       <div class="avatar" style="background:var(--gold)">${esc((c.name.trim()[0]||"?").toUpperCase())}</div>
-      <div class="voice-txt"><b>${esc(c.name)}</b><span>${t("myVoiceDesc")}</span></div>
+      <div class="voice-txt"><b>${esc(c.name)}</b><span>${t("myVoiceDesc")}${{ pending:" · "+t("sharePending"), published:" · "+t("sharePublic"), rejected:" · "+t("shareRejected") }[c.share] || ""}</span></div>
+      <button class="mini-play ${c.share==="pending"||c.share==="published"?"on":""}" data-cshare="${c.id}" data-name="${esc(c.name)}" data-share="${c.share||"none"}" aria-label="${t("shareVoice")}: ${esc(c.name)}" title="${t("shareVoice")}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg></button>
       <button class="mini-play" data-cdel="${c.id}" data-name="${esc(c.name)}" aria-label="${t("cloneDelete")} ${esc(c.name)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </div>`).join("") : "") +
+    (pubs.length ? `<div class="label">${t("communityVoices")}</div>` + pubs.map(v=>`<div class="voice ${"public:"+v.id===S.voice?"sel":""}" role="button" tabindex="0" data-id="public:${v.id}">
+      <div class="avatar" style="background:var(--surface-2);color:var(--gold)">${esc((v.name.trim()[0]||"?").toUpperCase())}</div>
+      <div class="voice-txt"><b>${esc(v.name)}</b><span>${t("communityDesc")}</span></div>
     </div>`).join("") : "") +
     `<div class="voice" role="button" tabindex="0" data-clone>
       <div class="avatar" style="background:var(--surface-2);color:var(--gold)">+</div>
@@ -1366,6 +1624,8 @@ $("voiceList").addEventListener("click", e=>{
   const s=e.target.closest("[data-sample]");
   if(s){ e.stopPropagation(); playSample(s.dataset.sample); return; }
   if(e.target.closest("[data-clone]")){ closeAll(); openCloneTerms(); return; }
+  const sh=e.target.closest("[data-cshare]");
+  if(sh){ e.stopPropagation(); shareClone(sh.dataset.cshare, sh.dataset.name, sh.dataset.share); return; }
   const del=e.target.closest("[data-cdel]");
   if(del){ e.stopPropagation(); deleteClone(del.dataset.cdel, del.dataset.name); return; }
   const v=e.target.closest(".voice[data-id]"); if(!v) return;
@@ -1391,10 +1651,10 @@ let pick = { plan:"starter", pay:"M-Pesa" };
 function openPlans(reason){
   $("planTitle").textContent=t("packages");
   $("planBody").innerHTML =
-    `<p class="sub">${reason || t("plansSub")}</p>` +
+    `<p class="sub">${reason || t("plansSub")}</p>` + priceNote() +
     (S.pendingPlan ? `<p class="okmsg">${t("payPending", planName(S.pendingPlan))}</p>` : "") +
     PLANS.map(p=>`<button class="plan ${p.id===pick.plan?"sel":""}" data-plan="${p.id}">
-      <b>${p.name}${p.popular?`<span class="tag">${t("popular")}</span>`:""}</b><span class="price">${tsh(p.price)}</span>
+      <b>${p.name}${p.popular?`<span class="tag">${t("popular")}</span>`:""}</b><span class="price">${money(p.price)}</span>
       <span class="what">${t("planWhat", p)}</span></button>`).join("") +
     `<button class="gold-btn" id="toPay">${t("continue")}</button>`;
   openSheet("planSheet");
@@ -1409,8 +1669,8 @@ function openPay(){
       <label for="phone">${t("phone")}</label>
       <input id="phone" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXX" value="${esc(/^\+255/.test(S.user?.phone||"") ? S.user.phone : "")}">
     </form>
-    <div class="demo-flag">${t("payInfo")}</div>
-    <button class="gold-btn" id="payBtn">${t("request", tsh(p.price))}</button>
+    ${priceNote()}<div class="demo-flag">${t("payInfo")}</div>
+    <button class="gold-btn" id="payBtn">${t("request", money(p.price))}</button>
     <button class="act" id="backPlans" style="align-self:center">${t("backPlans")}</button>`;
 }
 $("planBody").addEventListener("click", e=>{
@@ -1497,7 +1757,10 @@ $("authForm").addEventListener("click", e=>{ const b=e.target.closest("[data-go]
 $("toForgot").onclick = ()=>showAuth("forgot");
 
 function loggedIn(p){
+  if(S.owner && S.owner!==p.email){ S.chats=[]; S.cur=null; S.synced={}; S.upl={}; S.delQ=[]; audioStore.clear(); } // a different account: never mix in the previous person's history
+  S.owner = p.email;
   S.user = { name:p.name, email:p.email, phone:p.phone, lang:S.lang, token:p.token, isAdmin:p.isAdmin };
+  autoLang();
   S.planId = p.planId || "trial"; S.balance = p.balance; S.total = p.total; S.freeTests = p.freeTests || []; S.unlimited = !!p.unlimited;
   save(); $("auth").hidden=true; $("aPass").value=""; renderIdeas(); renderAll(); toast(t("welcome", p.name.split(" ")[0]));
   if(p.lang !== S.lang) track("/profile", { lang:S.lang });
@@ -1547,9 +1810,12 @@ async function loadMe(){
     const approved = S.pendingPlan && !p.pendingPlan && p.balance > S.balance;
     NOTIFS = list;
     Object.assign(S.user, { name:p.name, isAdmin:p.isAdmin });
-    Object.assign(S, { balance:p.balance, total:p.total, planId:p.planId, freeTests:p.freeTests || [], pendingPlan:p.pendingPlan, unlimited:!!p.unlimited, clones:p.clones || [] });
+    Object.assign(S, { balance:p.balance, total:p.total, planId:p.planId, freeTests:p.freeTests || [], pendingPlan:p.pendingPlan, unlimited:!!p.unlimited, clones:p.clones || [], publicVoices:p.publicVoices || [] });
+    S.user.phone = p.phone || S.user.phone;
     S.voice = voiceOf(S.voice).id; renderVoice(); // a cloned voice deleted on another device falls back to Baraka
+    autoLang();
     save(); renderBell(); renderBal(); renderIdeas(); renderMe();
+    pullChats(); // the history made on the user's other devices
     if(approved) toast(t("paidOk"));
   }catch(e){}
 }
@@ -1569,7 +1835,7 @@ setInterval(loadMe, CONFIG.REFRESH_EVERY_MS);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadMe(); });
 
 /* ---------- start ---------- */
-applyLang(); renderIdeas(); renderAll();
+applyLang(); renderIdeas(); renderAll(); loadRates();
 // The link in a "forgot password" email ends with #access_token=…&type=recovery.
 // In a browser it opens this page; on Android it opens the app (sautiplus://reset#…).
 function handleLink(url){

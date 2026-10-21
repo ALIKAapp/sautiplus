@@ -117,6 +117,8 @@ body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset
 @media (max-width:560px){.row2{grid-template-columns:1fr}}
 .said{white-space:normal;min-width:220px;max-width:420px}
 tr.done td{opacity:.5}
+.qk{display:flex;gap:8px;flex-wrap:wrap}
+.qk .btn{padding:8px 16px}
 </style>
 </head>
 <body>
@@ -135,6 +137,7 @@ tr.done td{opacity:.5}
     <button role="tab" data-tab="support">Support <span class="pill gold" id="supCount" hidden></span></button>
     <button role="tab" data-tab="access">Full access</button>
     <button role="tab" data-tab="clones">Voice clones</button>
+    <button role="tab" data-tab="shared">Public voices <span class="pill gold" id="shCount" hidden></span></button>
     <button role="tab" data-tab="notify">Notifications</button>
   </nav>
 
@@ -224,6 +227,21 @@ tr.done td{opacity:.5}
     </table></div>
   </section>
 
+  <!-- PUBLIC VOICES: cloned voices users asked to share with everybody -->
+  <section data-pane="shared" hidden>
+    <p class="muted">Users can ask to share one of their cloned voices with everybody. Listen-check it first (you can find it in your ElevenLabs account), then press <b>Publish</b>: it appears in every user's voice list under "Community voices". You can also rename it (the new name is what users see) or take it down later.</p>
+    <h2>Waiting for you</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Voice</th><th>Owner</th><th>Asked</th><th></th></tr></thead>
+      <tbody id="shPending"></tbody>
+    </table></div>
+    <h2>Published and rejected</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Voice</th><th>Owner</th><th class="num">Uses</th><th>Status</th><th></th></tr></thead>
+      <tbody id="shDone"></tbody>
+    </table></div>
+  </section>
+
   <!-- NOTIFICATIONS -->
   <section data-pane="notify" hidden>
     <form class="form panel" id="nForm">
@@ -245,6 +263,27 @@ tr.done td{opacity:.5}
     <p class="err" id="gErr" role="alert"></p>
     <button class="btn gold" id="gGo">Open admin panel</button>
     <a class="btn" href="./">Back to app</a>
+  </form>
+</div>
+<div class="gate" id="mDlg" hidden>
+  <form id="mForm">
+    <h2>Add minutes</h2>
+    <p class="muted" id="mWho" style="margin:-6px 0 4px"></p>
+    <div class="qk" id="mQuick">
+      <button type="button" class="btn" data-m="5">+5</button><button type="button" class="btn" data-m="10">+10</button><button type="button" class="btn" data-m="30">+30</button><button type="button" class="btn" data-m="60">+60</button>
+    </div>
+    <div><label for="mNum">Minutes to give (use a minus to take away, e.g. -5)</label><input id="mNum" inputmode="decimal" autocomplete="off" placeholder="10"></div>
+    <p class="err" id="mErr" role="alert"></p>
+    <button class="btn gold" id="mGo">Give minutes</button>
+    <button type="button" class="btn" id="mCancel">Cancel</button>
+  </form>
+</div>
+<div class="gate" id="rDlg" hidden>
+  <form id="rForm">
+    <h2>Rename voice</h2>
+    <div><label for="rNum">Public name (what users see)</label><input id="rNum" maxlength="40" autocomplete="off"></div>
+    <button class="btn gold">Save name</button>
+    <button type="button" class="btn" id="rCancel">Cancel</button>
   </form>
 </div>
 <div class="tip" id="tip"></div>
@@ -443,11 +482,65 @@ Their account, balance and history are removed and cannot be brought back.`)) re
     return;
   }
   const b=e.target.closest("[data-grant]"); if(!b) return;
-  const v = prompt(`How many minutes to add for ${b.dataset.name}?\n(Use a minus sign to take minutes away, e.g. -5)`, "10");
-  if(v===null) return;
-  const minutes = Number(v.replace(",", "."));
-  if(!Number.isFinite(minutes) || minutes===0){ toast("Type a number of minutes, e.g. 10"); return; }
-  try{ const r = await api(`/admin/api/users/${b.dataset.grant}/minutes`, { method:"POST", body:JSON.stringify({ minutes }) }); toast(`Done. New balance: ${clock(r.balance)}`); loadUsers(); }
+  askMinutes(b.dataset.grant, b.dataset.name);
+};
+
+/* give (or take away) minutes: a small dialog instead of the browser's prompt box, which some phones block */
+let grantTo = null;
+function askMinutes(id, name){
+  const u = USERS.find(x=>x.id===id);
+  grantTo = id; $("mWho").textContent = `${name}${u ? " · balance now " + clock(u.balance_sec) : ""}`;
+  $("mNum").value = ""; $("mErr").textContent = ""; $("mDlg").hidden = false; setTimeout(()=>$("mNum").focus(), 50);
+}
+$("mQuick").onclick = e=>{ const b=e.target.closest("[data-m]"); if(b){ $("mNum").value = b.dataset.m; $("mNum").focus(); } };
+$("mCancel").onclick = ()=>{ $("mDlg").hidden = true; grantTo = null; };
+$("mForm").onsubmit = async e=>{
+  e.preventDefault();
+  const minutes = Number($("mNum").value.trim().replace(",", "."));
+  if(!Number.isFinite(minutes) || minutes===0 || Math.abs(minutes)>1000){ $("mErr").textContent = "Type a number of minutes between 1 and 1000, e.g. 10"; return; }
+  $("mGo").disabled = true; $("mErr").textContent = "";
+  try{
+    const r = await api(`/admin/api/users/${grantTo}/minutes`, { method:"POST", body:JSON.stringify({ minutes }) });
+    $("mDlg").hidden = true; grantTo = null; toast(`Done. New balance: ${clock(r.balance)}`); loadUsers();
+  }catch(err){ $("mErr").textContent = "Failed: " + err.message; }
+  $("mGo").disabled = false;
+};
+
+/* public voices */
+async function loadShared(){
+  const list = await api("/admin/api/shared");
+  const pend = list.filter(x=>x.share_status==="pending"), done = list.filter(x=>x.share_status!=="pending");
+  $("shCount").hidden = !pend.length; $("shCount").textContent = pend.length;
+  const who = x => x.user ? `${esc(x.user.name)}<div class="muted small">${esc(x.user.phone)}</div>` : `<span class="muted">Deleted user</span>`;
+  const nm = x => `<b>${esc(x.public_name || x.name)}</b>${x.public_name && x.public_name!==x.name ? `<div class="muted small">User called it: ${esc(x.name)}</div>` : ""}`;
+  $("shPending").innerHTML = pend.length ? pend.map(x=>`<tr><td>${nm(x)}</td><td>${who(x)}</td><td>${ago(x.shared_at)}</td>
+    <td><button class="btn gold" data-sh="publish" data-id="${x.id}">Publish</button>
+        <button class="btn" data-sh="rename" data-id="${x.id}" data-name="${esc(x.public_name || x.name)}">Rename</button>
+        <button class="btn danger" data-sh="reject" data-id="${x.id}">Reject</button></td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">No requests waiting.</td></tr>`;
+  $("shDone").innerHTML = done.length ? done.map(x=>`<tr><td>${nm(x)}</td><td>${who(x)}</td><td class="num">${n(x.uses)}</td>
+    <td>${x.share_status==="published" ? `<span class="pill ok">Published</span>` : `<span class="pill bad">Rejected</span>`}</td>
+    <td><button class="btn" data-sh="rename" data-id="${x.id}" data-name="${esc(x.public_name || x.name)}">Rename</button>
+        ${x.share_status==="published" ? `<button class="btn danger" data-sh="unpublish" data-id="${x.id}">Take down</button>` : `<button class="btn gold" data-sh="publish" data-id="${x.id}">Publish</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">Nothing yet.</td></tr>`;
+}
+async function onShared(e){
+  const b=e.target.closest("[data-sh]"); if(!b) return;
+  const act=b.dataset.sh; let body="{}";
+  if(act==="rename"){ renameId = b.dataset.id; $("rNum").value = b.dataset.name; $("rDlg").hidden = false; setTimeout(()=>$("rNum").select(), 50); return; }
+  else if(act==="reject" && !confirm("Reject this voice? The user will see that the request was rejected.")) return;
+  else if(act==="unpublish" && !confirm("Take this voice down? It disappears from every user's voice list.")) return;
+  b.disabled = true;
+  try{ await api(`/admin/api/shared/${b.dataset.id}/${act}`, { method:"POST", body }); toast({ publish:"Published", reject:"Rejected", unpublish:"Taken down", rename:"Renamed" }[act]); loadShared(); }
+  catch(err){ b.disabled=false; toast("Failed: "+err.message); }
+}
+$("shPending").onclick = onShared; $("shDone").onclick = onShared;
+let renameId = null;
+$("rCancel").onclick = ()=>{ $("rDlg").hidden = true; };
+$("rForm").onsubmit = async e=>{
+  e.preventDefault();
+  const name = $("rNum").value.trim(); if(!name){ toast("Type a name"); return; }
+  try{ await api(`/admin/api/shared/${renameId}/rename`, { method:"POST", body:JSON.stringify({ name }) }); $("rDlg").hidden = true; toast("Renamed"); loadShared(); }
   catch(err){ toast("Failed: "+err.message); }
 };
 
@@ -574,7 +667,7 @@ $("nList").onclick = async e=>{
 };
 
 /* load */
-const LOADERS = { overview:loadOverview, users:loadUsers, payments:loadPayments, support:loadSupport, access:loadAccess, clones:loadClones, notify:loadNotes };
+const LOADERS = { overview:loadOverview, users:loadUsers, payments:loadPayments, support:loadSupport, access:loadAccess, clones:loadClones, shared:loadShared, notify:loadNotes };
 async function load(tab){ try{ await LOADERS[tab](); } catch(err){ if(err.message!=="logged out") toast("Couldn't load: "+err.message); } }
 if(pass.get()) load("overview"); else showGate();
 </script>
