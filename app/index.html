@@ -392,7 +392,6 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
     <button class="act" id="logoutBtn" data-i18n="logout"></button>
   </div>
   <button class="terms-link" id="termsLink" data-i18n="termsName"></button>
-  <small id="verTag" style="text-align:center;color:var(--muted);font-size:11px;margin-top:4px"></small>
 </aside>
 
 <section class="sheet" id="voiceSheet" role="dialog" data-i18n-aria="chooseVoice">
@@ -546,7 +545,7 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 const CONFIG = { API: "https://zvsphyuxyidxarimngbr.supabase.co/functions/v1/api", CHARS_PER_SEC: 15, TRIAL_SECONDS: 10, REFRESH_EVERY_MS: 120000 };
 const NATIVE = !!window.Capacitor?.isNativePlatform?.(); // true inside the Android app
 // Version of these screens. Raise it before every `npm run publish`: phones download the new screens when it is higher than theirs.
-const WEB_VERSION = "1.6.2";
+const WEB_VERSION = "1.6.3";
 // The SautiPlus website. It also holds app/version.json, which tells the app about updates.
 const SITE = "https://alikaapp.github.io/sautiplus";
 
@@ -1449,7 +1448,7 @@ $("logoutBtn").onclick=()=>{ stopPlay(); S.user=null; S.unlimited=false; S.clone
 /* ---------- terms and conditions ----------
    Shown from the sign-up form and the menu. Cloning a voice has its own short terms, agreed to every time. */
 function openTerms(){
-  $("termsBody").innerHTML = t("terms").map(([h,p])=>`<h3>${esc(h)}</h3><p>${esc(p)}</p>`).join("") + `<p style="margin-top:14px">${esc(t("termsDate"))}</p>`;
+  $("termsBody").innerHTML = t("terms").map(([h,p])=>`<h3>${esc(h)}</h3><p>${esc(p)}</p>`).join("") + `<p style="margin-top:14px">${esc(t("termsDate"))}</p><p style="margin-top:4px">v${WEB_VERSION}</p>`; // version = which screens this phone is really running
   $("termsBody").scrollTop = 0;
   openSheet("termsSheet");
 }
@@ -1861,7 +1860,6 @@ setInterval(loadMe, CONFIG.REFRESH_EVERY_MS);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) loadMe(); });
 
 /* ---------- start ---------- */
-$("verTag").textContent = "v" + WEB_VERSION; // shows which screens this phone is really running
 applyLang(); renderIdeas(); renderAll(); loadRates();
 // The link in a "forgot password" email ends with #access_token=…&type=recovery.
 // In a browser it opens this page; on Android it opens the app (sautiplus://reset#…).
