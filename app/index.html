@@ -38,7 +38,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 svg{display:block}
 
-.app{height:100%;display:flex;flex-direction:column;max-width:760px;margin:0 auto}
+.app{position:relative;height:100%;display:flex;flex-direction:column;max-width:760px;margin:0 auto}
 
 /* Animated logo: bars move like a sound wave */
 .logo-mark.alive rect{transform-box:fill-box;transform-origin:center;animation:wave 1.3s ease-in-out infinite}
@@ -174,7 +174,10 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 @media (prefers-reduced-motion:reduce){#wordmark rect,.ptr.spin svg{animation:none}}
 /* Press and hold a message to delete it */
 .msgs .u,.msgs .a{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-.msgs .held{outline:2px solid var(--gold);outline-offset:3px;border-radius:var(--r-lg)}
+.msgs .picked{outline:2px solid var(--gold);outline-offset:3px;border-radius:var(--r-lg);background-image:linear-gradient(color-mix(in srgb,var(--gold) 14%,transparent),color-mix(in srgb,var(--gold) 14%,transparent))}
+.selbar{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--line);height:62px}
+.selbar b{flex:1;font-size:17px}
+.icon-btn.danger{color:#D9534F}
 .gold-btn.del{background:#D9534F;color:#fff}
 /* Voice recorder (voice cloning) */
 #recSheet{height:88%}
@@ -314,6 +317,11 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
     </div>
   </header>
 
+  <div class="selbar" id="selBar" hidden>
+    <button class="icon-btn" id="selClose" data-i18n-aria="close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <b id="selCount" aria-live="polite"></b>
+    <button class="icon-btn danger" id="selDelete" data-i18n-aria="delGo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+  </div>
   <div class="ptr" id="ptr" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></svg></div>
   <main class="scroll" id="scroll">
     <section class="empty" id="empty">
@@ -417,7 +425,7 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 
 <section class="sheet" id="delSheet" role="dialog" data-i18n-aria="delTitle">
   <div class="grab"></div>
-  <div class="sheet-head"><h2 data-i18n="delTitle"></h2><button class="icon-btn" data-close data-i18n-aria="close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="sheet-head"><h2 id="delTitleH" data-i18n="delTitle"></h2><button class="icon-btn" data-close data-i18n-aria="close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="sheet-body">
     <p class="sub" id="delWhat" style="overflow-wrap:anywhere"></p>
     <button class="gold-btn del" id="delGo" data-i18n="delGo"></button>
@@ -537,7 +545,7 @@ img.avatar{object-fit:cover;background:var(--surface-2)}
 const CONFIG = { API: "https://zvsphyuxyidxarimngbr.supabase.co/functions/v1/api", CHARS_PER_SEC: 15, TRIAL_SECONDS: 10, REFRESH_EVERY_MS: 120000 };
 const NATIVE = !!window.Capacitor?.isNativePlatform?.(); // true inside the Android app
 // Version of these screens. Raise it before every `npm run publish`: phones download the new screens when it is higher than theirs.
-const WEB_VERSION = "1.6.0";
+const WEB_VERSION = "1.6.1";
 // The SautiPlus website. It also holds app/version.json, which tells the app about updates.
 const SITE = "https://alikaapp.github.io/sautiplus";
 
@@ -702,6 +710,7 @@ const T = {
     payRequested:p=>`Ombi lako la kifurushi cha ${p} limepokelewa. Tutawasiliana nawe kupitia simu yako kukamilisha malipo. Dakika zitaongezwa mara malipo yatakapothibitishwa.`,
     payPending:p=>`Ombi lako la kifurushi cha ${p} linasubiri uthibitisho wa malipo.`,
     paidOk:"Malipo yamethibitishwa. Dakika zimeongezwa!",
+    selCount:n=>`${n} imechaguliwa`, delTitleN:n=>n===1?"Futa ujumbe huu?":`Futa jumbe ${n}?`, selDelAsk:n=>n===1?"Ujumbe 1 utafutwa. Faili la sauti litaondolewa pia.":`Jumbe ${n} zitafutwa. Faili za sauti zitaondolewa pia.`,
     delChat:"Futa mazungumzo haya", delChatAsk:n=>`Futa mazungumzo "${n}" pamoja na sauti zake zote? Haiwezi kurudishwa.`,
     copyScript:"Nakili mswada", seek:"Sogeza sauti",
     autoWait:"AI inachagua hisia…", autoFail:"Hisia za AI hazikupatikana sasa hivi. Zimewekwa kwa kanuni rahisi.",
@@ -807,6 +816,7 @@ const T = {
     payRequested:p=>`We received your request for the ${p} package. We will contact you on your phone to complete the payment. Your minutes are added as soon as the payment is confirmed.`,
     payPending:p=>`Your request for the ${p} package is waiting for payment confirmation.`,
     paidOk:"Payment confirmed. Your minutes have been added!",
+    selCount:n=>`${n} selected`, delTitleN:n=>n===1?"Delete this message?":`Delete ${n} messages?`, selDelAsk:n=>n===1?"1 message will be deleted. Its audio file is removed too.":`${n} messages will be deleted. Their audio files are removed too.`,
     delChat:"Delete this conversation", delChatAsk:n=>`Delete the conversation "${n}" and all its voice overs? It can't be brought back.`,
     copyScript:"Copy script", seek:"Move through the voice over",
     autoWait:"AI is choosing expressions…", autoFail:"AI expressions are not available right now. Simple rules were used instead.",
@@ -1022,12 +1032,13 @@ function renderMsgs(){
   const c = curChat();
   const has = c && c.msgs.length;
   $("empty").hidden = !!has; $("msgs").hidden = !has;
-  if(!has){ $("msgs").innerHTML=""; return; }
+  if(!has){ $("msgs").innerHTML=""; paintSel(); return; }
   $("msgs").innerHTML = c.msgs.map((m,i) => m.role==="user"
     ? `<div class="u-wrap"><div class="u" data-i="${i}">${esc(m.text).replace(/\[([^\]\n]{1,30})\]/g,'<span class="tg">[$1]</span>')}</div>
         <button class="act" data-copy="${i}" aria-label="${t("copyScript")}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>${t("copy")}</button></div>`
     : voiceCard(m)).join("");
   $("scroll").scrollTop = $("scroll").scrollHeight;
+  paintSel();
 }
 function exprLabel(m){
   if(hasTags(m.text)) return " · "+t("autoExpr");
@@ -1236,7 +1247,7 @@ function seekTo(el, m, ratio){
   const msgOf = el => curChat()?.msgs.find(x=>x.id===el.dataset.id);
   const ratio = (wave,e) => { const r=wave.getBoundingClientRect(); return (e.clientX-r.left)/r.width; };
   box.addEventListener("pointerdown", e=>{
-    const wave=e.target.closest("[data-wave]"); if(!wave || e.button>0) return;
+    const wave=e.target.closest("[data-wave]"); if(!wave || e.button>0 || sel.size) return; // while messages are highlighted a tap selects, it does not seek
     const el=wave.closest(".a"), m=msgOf(el); if(!m) return;
     drag={ wave, el, m, id:e.pointerId };
     try{ wave.setPointerCapture(e.pointerId); }catch(err){}
@@ -1314,27 +1325,37 @@ $("msgs").addEventListener("click", e=>{
   if(act==="dl") saveAudio(m);
 });
 
-/* ---------- press and hold a message to delete it ----------
-   Works on the user's own scripts and on finished voice overs. On a computer, right-click does the same. */
-let delIndex = -1; // position (in the open conversation) of the message the user is about to delete
-function askDelete(el){
-  const c = curChat(); if(!c) return;
-  delIndex = el.matches(".u") ? +el.dataset.i : c.msgs.findIndex(m=>m.id===el.dataset.id);
-  const m = c.msgs[delIndex]; if(!m) return;
-  el.classList.add("held");
-  $("delWhat").textContent = m.role==="user" ? `${t("delScript")}: "${m.text.length > 90 ? m.text.slice(0, 90)+"…" : m.text}"` : t("delAudio", voiceOf(m.voice).name, fmt(m.sec));
-  openSheet("delSheet");
+/* ---------- select messages, then delete them ----------
+   Press and hold a script or a voice over to highlight the whole message; tap more messages to add them.
+   A bar with a dustbin appears at the top. On a computer, right-click does the same as press and hold. */
+const sel = new Set(); // the message objects that are highlighted
+const msgOfEl = el => { const c = curChat(); return c && (el.matches(".u") ? c.msgs[+el.dataset.i] : c.msgs.find(m=>m.id===el.dataset.id)); };
+function paintSel(){
+  const c = curChat();
+  for(const m of [...sel]) if(!c || !c.msgs.includes(m)) sel.delete(m); // another conversation was opened
+  document.querySelectorAll("#msgs .u, #msgs .a[data-id]").forEach(el=>el.classList.toggle("picked", sel.has(msgOfEl(el))));
+  $("selBar").hidden = !sel.size;
+  $("selCount").textContent = t("selCount", sel.size);
 }
+function toggleSel(el){ const m = msgOfEl(el); if(!m) return; sel.has(m) ? sel.delete(m) : sel.add(m); paintSel(); }
+function clearSel(){ if(sel.size){ sel.clear(); paintSel(); } }
+$("selClose").onclick = clearSel;
+$("selDelete").onclick = ()=>{
+  if(!sel.size) return;
+  $("delTitleH").textContent = t("delTitleN", sel.size);
+  $("delWhat").textContent = t("selDelAsk", sel.size);
+  openSheet("delSheet");
+};
 $("delGo").onclick = ()=>{
-  const c = curChat(), m = c && c.msgs[delIndex];
+  const c = curChat();
   closeAll();
-  if(!m) return;
-  if(m.role==="voice"){
+  if(!c || !sel.size) return;
+  for(const m of c.msgs) if(sel.has(m) && m.role==="voice"){
     if(playing && playing.id===m.id) stopPlay();
     if(audioCache[m.id]){ URL.revokeObjectURL(audioCache[m.id]); delete audioCache[m.id]; }
     audioStore.del(m.id);
   }
-  c.msgs.splice(delIndex, 1);
+  c.msgs = c.msgs.filter(m=>!sel.has(m)); sel.clear();
   if(!c.msgs.length){ // an empty conversation is removed from the history
     S.chats = S.chats.filter(x=>x!==c); S.cur = null;
     if(S.user?.token && S.synced[c.id]){ S.delQ.push(c.id); delete S.synced[c.id]; flushDeletes(); }
@@ -1342,38 +1363,42 @@ $("delGo").onclick = ()=>{
   save(); renderAll(); toast(t("deleted"));
 };
 (()=>{
-  const box = $("msgs"), HOLD = 550;
+  const box = $("msgs"), HOLD = 450;
   let timer = null, x0 = 0, y0 = 0, held = false, heldAt = 0;
-  const item = e => e.target.closest("[data-wave]") ? null : e.target.closest(".u, .a[data-id]"); // holding the wave is for moving through the audio, not deleting
+  const item = e => e.target.closest("[data-wave]") ? null : e.target.closest(".u, .a[data-id]"); // holding the wave is for moving through the audio
   const cancel = ()=>{ clearTimeout(timer); timer = null; };
   box.addEventListener("pointerdown", e=>{
     const el = item(e); held = false; cancel();
     if(!el || e.button > 0) return;
     x0 = e.clientX; y0 = e.clientY;
-    timer = setTimeout(()=>{ timer = null; held = true; heldAt = Date.now(); askDelete(el); }, HOLD);
+    timer = setTimeout(()=>{ timer = null; held = true; heldAt = Date.now(); try{ navigator.vibrate?.(15); }catch(err){} toggleSel(el); }, HOLD);
   });
   box.addEventListener("pointermove", e=>{ if(timer && Math.hypot(e.clientX-x0, e.clientY-y0) > 10) cancel(); }); // the finger moved: it's a scroll
   ["pointerup","pointercancel","pointerleave"].forEach(n=>box.addEventListener(n, cancel));
   $("scroll").addEventListener("scroll", cancel, { passive:true });
-  box.addEventListener("contextmenu", e=>{ const el = item(e); if(!el) return; e.preventDefault(); cancel(); if(Date.now()-heldAt > 1000) askDelete(el); }); // phones also fire this at the end of a hold: once is enough
-  // lifting the finger after a hold must not also press Play or Download underneath
-  box.addEventListener("click", e=>{ if(held){ held = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  box.addEventListener("contextmenu", e=>{ const el = item(e); if(!el) return; e.preventDefault(); cancel(); if(Date.now()-heldAt > 1000) toggleSel(el); }); // phones also fire this at the end of a hold: once is enough
+  box.addEventListener("click", e=>{
+    if(held){ held = false; e.stopPropagation(); e.preventDefault(); return; } // lifting the finger after a hold must not also press Play or Download underneath
+    if(!sel.size) return;
+    const el = e.target.closest(".u-wrap")?.querySelector(".u") || e.target.closest(".a[data-id]"); // while messages are highlighted, a tap adds or removes a message
+    if(el){ e.stopPropagation(); e.preventDefault(); toggleSel(el); }
+  }, true);
 })();
 
 /* ---------- drawer ---------- */
 function openDrawer(){ $("drawer").classList.add("show"); $("scrim").classList.add("show"); }
 let rec = null; // the voice recording in progress (voice cloning): {stream, mr, blob, secs, timer}
-function closeAll(){ stopSample(); if(rec){ recStop(); rec = null; } document.querySelectorAll(".msgs .held").forEach(el=>el.classList.remove("held")); ["drawer","delSheet","termsSheet","cloneSheet","recSheet","chatSheet","voiceSheet","exprSheet","notifSheet","planSheet"].forEach(id=>$(id).classList.remove("show")); $("scrim").classList.remove("show"); }
+function closeAll(){ stopSample(); if(rec){ recStop(); rec = null; } ["drawer","delSheet","termsSheet","cloneSheet","recSheet","chatSheet","voiceSheet","exprSheet","notifSheet","planSheet"].forEach(id=>$(id).classList.remove("show")); $("scrim").classList.remove("show"); }
 function openSheet(id){ $(id).classList.add("show"); $("scrim").classList.add("show"); }
 $("menuBtn").onclick=openDrawer;
 $("scrim").onclick=closeAll;
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeAll);
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeAll(); });
-function newChat(){ stopPlay(); S.cur=null; save(); closeAll(); renderAll(); input.focus(); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(document.querySelector(".sheet.show, .drawer.show")) closeAll(); else clearSel(); } });
+function newChat(){ stopPlay(); clearSel(); S.cur=null; save(); closeAll(); renderAll(); input.focus(); }
 $("newTop").onclick=newChat; $("newDrawer").onclick=newChat;
 $("hist").onclick=e=>{
   const d=e.target.closest("[data-del]"); if(d){ deleteChat(d.dataset.del); return; }
-  const b=e.target.closest("button[data-id]"); if(!b) return; stopPlay(); S.cur=b.dataset.id; save(); closeAll(); renderAll();
+  const b=e.target.closest("button[data-id]"); if(!b) return; stopPlay(); clearSel(); S.cur=b.dataset.id; save(); closeAll(); renderAll();
 };
 // Deletes a whole conversation from the menu: here, on the server and on the user's other devices.
 function deleteChat(id){
@@ -1855,6 +1880,7 @@ if(NATIVE){
   // Android back button: close whatever is open first, leave the app only from the main screen
   App.addListener("backButton", ()=>{
     if(!$("updateScreen").hidden) App.minimizeApp();
+    else if(sel.size && !document.querySelector(".sheet.show, .drawer.show")) clearSel();
     else if(document.querySelector(".sheet.show, .drawer.show")) closeAll();
     else if(!$("auth").hidden && authMode!=="signup" && authMode!=="login") showAuth("login");
     else App.minimizeApp();

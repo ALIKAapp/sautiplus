@@ -1,7 +1,7 @@
 {
-  "web": "1.6.0",
-  "bundleUrl": "https://alikaapp.github.io/sautiplus/app/sautiplus-1.6.0.zip",
-  "checksum": "6a7f357a21e270727b04fcb55ddcae36110d861f32ed3f91a650966bc36d6e3c",
+  "web": "1.6.1",
+  "bundleUrl": "https://alikaapp.github.io/sautiplus/app/sautiplus-1.6.1.zip",
+  "checksum": "bb6589126ccc71930ae9e5092bdb575129390e73f5629fbb1b81e24847ba7640",
   "minApk": 3,
   "apkBuild": 4,
   "apkVersion": "1.3",
